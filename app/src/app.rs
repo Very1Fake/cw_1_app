@@ -32,13 +32,15 @@ impl EApp for App {
     fn update(&mut self, ctx: &Context, _frame: &Frame) {
         let mut state = None;
 
-        TopBottomPanel::top("top_bar").show(ctx, |ui| ui.horizontal(|ui| {
-            global_dark_light_mode_switch(ui);
+        TopBottomPanel::top("top_bar").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                global_dark_light_mode_switch(ui);
 
-            if let AppScreen::Main = &mut self.state {
-                ui.separator();
-            }
-        }));
+                if let AppScreen::Main = &mut self.state {
+                    ui.separator();
+                }
+            })
+        });
 
         match &mut self.state {
             AppScreen::Auth {
@@ -49,7 +51,7 @@ impl EApp for App {
                 Window::new("Authorization")
                     .resizable(false)
                     .collapsible(false)
-                    .anchor(Align2::CENTER_CENTER, Vec2::ZERO)  // FIX
+                    .anchor(Align2::CENTER_CENTER, Vec2::ZERO) // FIX
                     .show(ctx, |ui| {
                         ui.vertical_centered(|ui| {
                             ui.add(
@@ -84,7 +86,7 @@ impl EApp for App {
                 Window::new("Set Up")
                     .resizable(false)
                     .collapsible(false)
-                    .anchor(Align2::CENTER_CENTER, Vec2::ZERO)  // FIX
+                    .anchor(Align2::CENTER_CENTER, Vec2::ZERO) // FIX
                     .show(ctx, |ui| {
                         ui.vertical_centered(|ui| {
                             ui.label(RichText::new("Connection").text_style(TextStyle::Heading));

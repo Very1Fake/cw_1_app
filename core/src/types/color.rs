@@ -1,0 +1,22 @@
+#[derive(Debug)]
+pub enum Color {
+    Black,
+    DarkGray,
+    Gray,
+    LightGray,
+    White,
+    Brown,
+    DarkRed,
+    Red,
+    LightRed,
+    Yellow,
+    LightYellow,
+    Khaki,
+    DarkGreen,
+    Green,
+    LightGreen,
+    DarkBlue,
+    Blue,
+    LightBlue,
+    Gold,
+}
