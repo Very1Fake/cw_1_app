@@ -42,6 +42,16 @@ pub struct ComponentKind {
 }
 
 impl ComponentKind {
+    pub const NAME: &'static str = "ComponentKind";
+
+    pub const CREATE: &'static str = r#"CREATE TABLE "ComponentKind" (
+    uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name text NOT NULL,
+    details text
+)"#;
+
+    pub const DROP: &'static str = r#"DROP TABLE "ComponentKind";"#;
+
     pub const fn new(uuid: Uuid, name: String, details: Option<String>) -> Self {
         Self {
             uuid,

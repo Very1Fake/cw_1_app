@@ -12,6 +12,19 @@ pub struct Warehouse {
 }
 
 impl Warehouse {
+    pub const NAME: &'static str = "Warehouse";
+
+    pub const CREATE: &'static str = r#"CREATE TABLE "Warehouse" (
+    uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    component uuid NOT NULL REFERENCES "Component" ON DELETE restrict ON UPDATE cascade,
+    supplier uuid NOT NULL REFERENCES "Supplier" ON DELETE restrict ON UPDATE cascade,
+    price money NOT NULL,
+    amount int NOT NULL DEFAULT 0,
+    UNIQUE(component, supplier)
+);"#;
+
+    pub const DROP: &'static str = r#"DROP TABLE "Warehouse";"#;
+
     pub const fn new(uuid: Uuid, component: Uuid, supplier: Uuid, price: f64, amount: i32) -> Self {
         Self {
             uuid,

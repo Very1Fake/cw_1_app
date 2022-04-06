@@ -14,6 +14,20 @@ pub struct Person {
 }
 
 impl Person {
+    pub const NAME: &'static str = "Person";
+
+    pub const CREATE: &'static str = r#"CREATE TABLE "Person" (
+    uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    first_name text NOT NULL,
+    middle_name text,
+    last_name text NOT NULL,
+    email text UNIQUE NOT NULL CHECK (length(email) <= 254),
+    phone text UNIQUE NOT NULL CHECK (length(phone) <= 18),
+    meta metatime NOT NULL DEFAULT (current_timestamp, current_timestamp)
+);"#;
+
+    pub const DROP: &'static str = r#"DROP TABLE "Person";"#;
+
     pub const fn new(
         uuid: Uuid,
         f_name: String,

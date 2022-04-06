@@ -14,6 +14,18 @@ pub struct WarehouseSupply {
 }
 
 impl WarehouseSupply {
+    pub const NAME: &'static str = "WarehouseSupply";
+
+    pub const CREATE: &'static str = r#"CREATE TABLE "WarehouseSupply" (
+    item uuid NOT NULL REFERENCES "Warehouse" ON DELETE restrict ON UPDATE cascade,
+    supply uuid NOT NULL REFERENCES "Supply" ON DELETE restrict ON UPDATE cascade,
+    amount int NOT NULL,
+    created timestamp NOT NULL DEFAULT current_timestamp,
+    PRIMARY KEY(item, supply)
+);"#;
+
+    pub const DROP: &'static str = r#"DROP TABLE "WarehouseSupply";"#;
+
     pub const fn new(item: Uuid, supply: Uuid, amount: i32, created: Instant) -> Self {
         Self {
             item,

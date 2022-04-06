@@ -10,6 +10,16 @@ pub struct ServiceComponent {
 }
 
 impl ServiceComponent {
+    pub const NAME: &'static str = "ServiceComponent";
+
+    pub const CREATE: &'static str = r#"CREATE TABLE "ServiceComponent" (
+    service uuid NOT NULL REFERENCES "Service" ON DELETE restrict ON UPDATE cascade,
+    component uuid NOT NULL REFERENCES "ComponentKind" ON DELETE restrict ON UPDATE cascade,
+    PRIMARY KEY (service, component)
+);"#;
+
+    pub const DROP: &'static str = r#"DROP TABLE "ServiceComponent";"#;
+
     pub const fn new(service: Uuid, component: Uuid) -> Self {
         Self { service, component }
     }

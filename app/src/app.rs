@@ -76,7 +76,7 @@ impl EApp for App {
                     });
             }
             AppScreen::Setup {
-                address_input,
+                host_input,
                 user_input,
                 password_input,
                 db_name_input,
@@ -93,9 +93,9 @@ impl EApp for App {
                             ui.separator();
                             ui.add_space(8.0);
                             ui.add(
-                                TextEdit::singleline(address_input)
+                                TextEdit::singleline(host_input)
                                     .font(TextStyle::Heading)
-                                    .hint_text("DB Address"),
+                                    .hint_text("DB Host"),
                             );
                             ui.add_space(8.0);
                             ui.add(
@@ -167,7 +167,7 @@ pub enum AppScreen {
         remember_me: bool,
     },
     Setup {
-        address_input: String,
+        host_input: String,
         user_input: String,
         password_input: String,
         db_name_input: String,
@@ -180,7 +180,7 @@ pub enum AppScreen {
 impl AppScreen {
     pub fn setup() -> Self {
         Self::Setup {
-            address_input: String::new(),
+            host_input: String::new(),
             user_input: String::new(),
             password_input: String::new(),
             db_name_input: String::new(),

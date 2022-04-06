@@ -12,6 +12,18 @@ pub struct Component {
 }
 
 impl Component {
+    pub const NAME: &'static str = "Component";
+
+    pub const CREATE: &'static str = r#"CREATE TABLE "Component" (
+    uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name text NOT NULL,
+    kind uuid NOT NULL REFERENCES "ComponentKind" ON DELETE restrict ON UPDATE cascade,
+    model uuid NOT NULL REFERENCES "PhoneModel" ON DELETE restrict ON UPDATE cascade,
+    manufacturer uuid NOT NULL REFERENCES "Manufacturer" ON DELETE restrict ON UPDATE cascade
+);"#;
+
+    pub const DROP: &'static str = r#"DROP TABLE "Component";"#;
+
     pub const fn new(
         uuid: Uuid,
         name: String,

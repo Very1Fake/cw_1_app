@@ -18,6 +18,20 @@ pub struct Order {
 }
 
 impl Order {
+    pub const NAME: &'static str = "Order";
+
+    pub const CREATE: &'static str = r#"CREATE TABLE "Order" (
+    uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client uuid NOT NULL REFERENCES "Person" ON DELETE restrict ON UPDATE cascade,
+    phone uuid NOT NULL REFERENCES "Phone" ON DELETE restrict ON UPDATE cascade,
+    serviceman uuid NOT NULL REFERENCES "Staff" ON DELETE restrict ON UPDATE cascade,
+    shopman uuid NOT NULL REFERENCES "Staff" ON DELETE restrict ON UPDATE cascade,
+    status "OrderStatus" NOT NULL DEFAULT 'Processing',
+    meta metatime DEFAULT (current_timestamp, current_timestamp)
+);"#;
+
+    pub const DROP: &'static str = r#"DROP TABLE "Order";"#;
+
     pub const fn new(
         uuid: Uuid,
         client: Uuid,

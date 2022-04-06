@@ -1,6 +1,6 @@
 pub use sqlx;
 
-pub mod dataset;
+pub mod extensions;
 pub mod tables;
 pub mod types;
 

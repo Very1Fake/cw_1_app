@@ -10,6 +10,17 @@ pub struct PhoneModel {
 }
 
 impl PhoneModel {
+    pub const NAME: &'static str = "PhoneModel";
+
+    pub const CREATE: &'static str = r#"CREATE TABLE "PhoneModel" (
+    uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name text NOT NULL UNIQUE,
+    description text,
+    manufacturer uuid NOT NULL REFERENCES "Manufacturer" ON DELETE restrict ON UPDATE cascade
+);"#;
+
+    pub const DROP: &'static str = r#"DROP TABLE "PhoneModel";"#;
+
     pub const fn new(
         uuid: Uuid,
         name: String,
