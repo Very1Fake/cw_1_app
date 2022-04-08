@@ -1,32 +1,47 @@
-use clap::{ArgEnum, Parser};
+use clap::{Args, Parser};
 
 /// Utility for fast operations with database
-#[derive(Parser, PartialEq, Debug)]
+#[derive(Parser, Debug)]
 #[clap(author, version, about)]
 pub struct Opt {
-    /// Database host (e.g. '127.0.0.0')
-    #[clap(short, long, default_value = "localhost", env = "DB_HOST")]
-    pub host: String,
-    /// Database port (5432 by default)
-    #[clap(long, default_value = "5432", env = "DB_PORT")]
-    pub port: u16,
-    /// Database username
-    #[clap(short, long, env = "DB_USER")]
-    pub username: String,
-    /// User password
-    #[clap(short, long, env = "DB_PASS")]
-    pub password: String,
-    /// Database name
-    #[clap(short, long, default_value = "cw1_db", env = "DB_NAME")]
-    pub database: String,
-    /// Available operations
-    #[clap(arg_enum)]
-    pub op: Op,
+    /// SubCommands
+    #[clap(subcommand)]
+    pub command: Command,
 }
 
-#[derive(ArgEnum, PartialEq, Clone, Debug)]
-pub enum Op {
+#[derive(Parser, Debug)]
+pub enum Command {
+    #[clap(alias = "db")]
+    Database(DatabaseOpt),
+    #[clap(alias = "gen")]
+    Generate {},
+}
+
+#[derive(Parser, Debug)]
+pub struct DatabaseOpt {
+    #[clap(flatten)]
+    pub db: DatabaseUri,
+    #[clap(subcommand)]
+    pub command: Database,
+}
+
+#[derive(Parser, Debug)]
+pub enum Database {
+    #[clap(alias = "c")]
     Create,
+    #[clap(alias = "d")]
     Drop,
-    Check,
+    #[clap(alias = "ch")]
+    Check {
+        /// Fix problem in place
+        #[clap(short, long)]
+        fix: bool,
+    },
+}
+
+#[derive(Args, Debug)]
+pub struct DatabaseUri {
+    /// Database uri (e.g. 'postgres://user:pass@host:port/db')
+    #[clap(short = 'd', long = "uri", env = "DB_URI")]
+    pub inner: String,
 }

@@ -1,4 +1,4 @@
-use uuid::Uuid;
+use sqlx::types::Uuid;
 
 use crate::types::{account_role::AccountRole, account_status::AccountStatus, metatime::MetaTime};
 

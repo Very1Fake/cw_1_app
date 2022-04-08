@@ -1,7 +1,7 @@
 use core::fmt;
 
 use anyhow::{Context, Result};
-use sqlx::{postgres::PgQueryResult, query, Error, Executor, PgPool};
+use sqlx::{postgres::PgQueryResult, query, query_as, Error, Executor, PgPool, Postgres};
 
 pub mod account;
 pub mod component;
@@ -173,6 +173,51 @@ impl Table {
             Table::OrderComponent => OrderComponent::DROP,
         }
     }
+
+    pub async fn exists(&self, pool: &PgPool) -> Result<bool, Error> {
+        match query_as::<Postgres, (bool,)>(
+            "SELECT true FROM information_schema.tables WHERE table_name = $1",
+        )
+        .bind(self.name())
+        .fetch_one(pool)
+        .await
+        {
+            Ok(_) => Ok(true),
+            Err(err) => {
+                if let Error::RowNotFound = err {
+                    Ok(false)
+                } else {
+                    Err(err)
+                }
+            }
+        }
+    }
+
+    /// Creates all application tables
+    pub async fn create_all(
+        pool: &PgPool,
+        handler: impl Fn((Table, Result<PgQueryResult, Error>)) -> Result<PgQueryResult, Error>,
+    ) -> Result<()> {
+        for table in Table::ALL {
+            handler((table, pool.execute(query(table.create())).await))
+                .with_context(|| format!("While creating '{table}' table"))?;
+        }
+
+        Ok(())
+    }
+
+    /// Drops all application tables
+    pub async fn drop_all(
+        pool: &PgPool,
+        handler: impl Fn((Table, Result<PgQueryResult, Error>)) -> Result<PgQueryResult, Error>,
+    ) -> Result<()> {
+        for table in Table::ALL.into_iter().rev() {
+            handler((table, pool.execute(query(table.drop())).await))
+                .with_context(|| format!("While dropping '{table}' table"))?;
+        }
+
+        Ok(())
+    }
 }
 
 impl fmt::Display for Table {
@@ -182,33 +227,6 @@ impl fmt::Display for Table {
 }
 
 pub trait TableObject {
+    // FIX
     fn table(&self) -> Table;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-/// Creates all application tables
-pub async fn tb_create_all(
-    pool: &PgPool,
-    handler: impl Fn((Table, Result<PgQueryResult, Error>)) -> Result<PgQueryResult, Error>,
-) -> Result<()> {
-    for table in Table::ALL {
-        handler((table, pool.execute(query(table.create())).await))
-            .with_context(|| format!("While creating '{table}' table"))?;
-    }
-
-    Ok(())
-}
-
-/// Drops all application tables
-pub async fn tb_drop_all(
-    pool: &PgPool,
-    handler: impl Fn((Table, Result<PgQueryResult, Error>)) -> Result<PgQueryResult, Error>,
-) -> Result<()> {
-    for table in Table::ALL.into_iter().rev() {
-        handler((table, pool.execute(query(table.drop())).await))
-            .with_context(|| format!("While dropping '{table}' table"))?;
-    }
-
-    Ok(())
 }

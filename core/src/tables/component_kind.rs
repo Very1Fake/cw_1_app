@@ -1,4 +1,4 @@
-use uuid::Uuid;
+use sqlx::types::Uuid;
 
 pub const KINDS: [(&str, Option<&str>); 16] = [
     ("Battery Li-Pol", Some("Lithium polymer battery")),

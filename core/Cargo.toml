@@ -5,11 +5,11 @@ license = "Apache-2.0"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# [features]
+# gen = ["isocountry"]
 
 [dependencies]
 anyhow = "1.0"
-isocountry = "0.3"
-uuid = { version = "0.8", features = ["v4", "serde"] }
+isocountry = { version = "0.3" }
 sqlx = { version = "0.5", default-features = false, features = ["macros", "runtime-tokio-rustls", "postgres", "uuid", "chrono"] }
 rand = "0.8"

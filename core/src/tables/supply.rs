@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use uuid::Uuid;
+use sqlx::types::Uuid;
 
 use crate::types::{metatime::MetaTime, supply_status::SupplyStatus};
 

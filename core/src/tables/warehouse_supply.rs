@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use uuid::Uuid;
+use sqlx::types::Uuid;
 
 /// Represents relation table between [`Warehouse`](`super::warehouse::Warehouse`) and [`Supply`](`super::supply::Supply`)
 #[derive(Debug)]

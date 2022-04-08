@@ -1,4 +1,4 @@
-use uuid::Uuid;
+use sqlx::types::Uuid;
 
 pub struct Component {
     pub uuid: Uuid,

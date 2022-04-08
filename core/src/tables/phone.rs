@@ -1,4 +1,4 @@
-use uuid::Uuid;
+use sqlx::types::Uuid;
 
 use crate::types::{color::Color, metatime::MetaTime};
 

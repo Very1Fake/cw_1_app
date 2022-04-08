@@ -1,4 +1,4 @@
-use uuid::Uuid;
+use sqlx::types::Uuid;
 
 use crate::types::{metatime::MetaTime, order_status::OrderStatus};
 

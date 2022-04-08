@@ -1,4 +1,4 @@
-use uuid::Uuid;
+use sqlx::types::Uuid;
 
 /// Represents relation table between [`Service`](`super::service::Service`) and [`ComponentKind`](`super::component_kind::ComponentKind`)
 #[derive(Debug)]

@@ -1,5 +1,5 @@
 use isocountry::CountryCode;
-use uuid::Uuid;
+use sqlx::types::Uuid;
 
 #[derive(Debug)]
 pub struct Manufacturer {
