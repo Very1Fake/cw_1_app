@@ -1,4 +1,6 @@
-use sqlx::types::Uuid;
+use mac_address::MacAddress;
+use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use uuid::Uuid;
 
 use crate::types::{color::Color, metatime::MetaTime};
 
@@ -6,10 +8,10 @@ use crate::types::{color::Color, metatime::MetaTime};
 pub struct Phone {
     pub uuid: Uuid,
     /// Foreign key references [`Person`](`super::person::Person`)
-    pub name: String,
+    pub person: Uuid,
     pub imei: String,
-    pub wifi: String,
-    pub bluetooth: String, // FIX
+    pub wifi: MacAddress,
+    pub bluetooth: MacAddress,
     /// Foreign key references [`PhoneModel`](`super::phone_model::PhoneModel`)
     pub model: Uuid,
     pub color: Color,
@@ -27,24 +29,24 @@ impl Phone {
     bluetooth macaddr,
     model uuid NOT NULL REFERENCES "PhoneModel" ON DELETE restrict ON UPDATE cascade,
     color color NOT NULL,
-    meta metatime NOT NULL DEFAULT (current_timestamp, current_timestamp)
+    meta metatime NOT NULL DEFAULT (now(), now())
 );"#;
 
     pub const DROP: &'static str = r#"DROP TABLE "Phone";"#;
 
     pub const fn new(
         uuid: Uuid,
-        name: String,
+        person: Uuid,
         imei: String,
-        wifi: String,
-        bluetooth: String,
+        wifi: MacAddress,
+        bluetooth: MacAddress,
         model: Uuid,
         color: Color,
         meta: MetaTime,
     ) -> Self {
         Self {
             uuid,
-            name,
+            person,
             imei,
             wifi,
             bluetooth,
@@ -52,5 +54,41 @@ impl Phone {
             color,
             meta,
         }
+    }
+
+    pub fn new_auto(
+        person: Uuid,
+        imei: String,
+        wifi: MacAddress,
+        bluetooth: MacAddress,
+        model: Uuid,
+        color: Color,
+    ) -> Self {
+        Self::new(
+            Uuid::new_v4(),
+            person,
+            imei,
+            wifi,
+            bluetooth,
+            model,
+            color,
+            MetaTime::default(),
+        )
+    }
+
+    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+        query(
+            r#"INSERT INTO "Phone" (uuid, person, imei, wifi, bluetooth, model, color) 
+VALUES ($1, $2, $3, $4, $5, $6, $7);"#,
+        )
+        .bind(self.uuid)
+        .bind(self.person)
+        .bind(self.imei.clone())
+        .bind(self.wifi)
+        .bind(self.bluetooth)
+        .bind(self.model)
+        .bind(self.color)
+        .execute(pool)
+        .await
     }
 }

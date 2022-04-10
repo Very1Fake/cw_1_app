@@ -1,6 +1,6 @@
-use std::time::Instant;
-
-use sqlx::types::Uuid;
+use chrono::{DateTime, Utc};
+use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use uuid::Uuid;
 
 use crate::types::{metatime::MetaTime, supply_status::SupplyStatus};
 
@@ -12,7 +12,7 @@ pub struct Supply {
     /// Foreign key references [`Staff`](`super::staff::Staff`)
     pub staff: Uuid,
     pub status: SupplyStatus,
-    pub signed: Option<Instant>,
+    pub signed: Option<DateTime<Utc>>,
     pub meta: MetaTime,
 }
 
@@ -24,8 +24,8 @@ impl Supply {
     contract uuid NOT NULL REFERENCES "SupplyContract" ON DELETE restrict ON UPDATE cascade,
     staff uuid NOT NULL REFERENCES "Staff" ON DELETE restrict ON UPDATE cascade,
     status "SupplyStatus" NOT NULL DEFAULT 'Review',
-    signed timestamp,
-    meta metatime NOT NULL DEFAULT (current_timestamp, current_timestamp)
+    signed timestamptz,
+    meta metatime NOT NULL DEFAULT (now(), now())
 );"#;
 
     pub const DROP: &'static str = r#"DROP TABLE "Supply";"#;
@@ -35,7 +35,7 @@ impl Supply {
         contract: Uuid,
         staff: Uuid,
         status: SupplyStatus,
-        signed: Option<Instant>,
+        signed: Option<DateTime<Utc>>,
         meta: MetaTime,
     ) -> Self {
         Self {
@@ -46,5 +46,35 @@ impl Supply {
             signed,
             meta,
         }
+    }
+
+    pub fn new_auto(
+        contract: Uuid,
+        staff: Uuid,
+        status: SupplyStatus,
+        signed: Option<DateTime<Utc>>,
+    ) -> Self {
+        Self::new(
+            Uuid::new_v4(),
+            contract,
+            staff,
+            status,
+            signed,
+            MetaTime::default(),
+        )
+    }
+
+    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+        query(
+            r#"INSERT INTO "Supply" (uuid, contract, staff, status, signed)
+VALUES ($1, $2, $3, $4, $5);"#,
+        )
+        .bind(self.uuid)
+        .bind(self.contract)
+        .bind(self.staff)
+        .bind(self.status)
+        .bind(self.signed)
+        .execute(pool)
+        .await
     }
 }

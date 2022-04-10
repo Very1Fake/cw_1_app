@@ -1,7 +1,7 @@
 use core::fmt;
 
 use anyhow::{Context, Result};
-use sqlx::{postgres::PgQueryResult, query, query_as, Error, Executor, PgPool, Postgres};
+use sqlx::{postgres::PgQueryResult, query, query_as, Error, PgPool, Postgres};
 
 pub mod account_role;
 pub mod account_status;
@@ -108,8 +108,8 @@ impl DbType {
         pool: &PgPool,
         handler: impl Fn((DbType, Result<PgQueryResult, Error>)) -> Result<PgQueryResult, Error>,
     ) -> Result<()> {
-        for db_type in DbType::ALL {
-            handler((db_type, pool.execute(query(db_type.create())).await))
+        for db_type in Self::ALL {
+            handler((db_type, query(db_type.create()).execute(pool).await))
                 .with_context(|| format!("While creating '{db_type}' type"))?;
         }
 
@@ -121,8 +121,8 @@ impl DbType {
         pool: &PgPool,
         handler: impl Fn((DbType, Result<PgQueryResult, Error>)) -> Result<PgQueryResult, Error>,
     ) -> Result<()> {
-        for db_type in DbType::ALL {
-            handler((db_type, pool.execute(query(db_type.drop())).await))
+        for db_type in Self::ALL {
+            handler((db_type, query(db_type.drop()).execute(pool).await))
                 .with_context(|| format!("While dropping '{db_type}' type"))?;
         }
 

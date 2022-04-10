@@ -1,4 +1,5 @@
-use sqlx::types::Uuid;
+use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct PhoneModel {
@@ -33,5 +34,22 @@ impl PhoneModel {
             description,
             manufacturer,
         }
+    }
+
+    pub fn new_auto(name: String, description: Option<String>, manufacturer: Uuid) -> Self {
+        Self::new(Uuid::new_v4(), name, description, manufacturer)
+    }
+
+    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+        query(
+            r#"INSERT INTO "PhoneModel" (uuid, name, description, manufacturer) 
+    VALUES ($1, $2, $3, $4);"#,
+        )
+        .bind(self.uuid)
+        .bind(self.name.clone())
+        .bind(self.description.clone())
+        .bind(self.manufacturer)
+        .execute(pool)
+        .await
     }
 }

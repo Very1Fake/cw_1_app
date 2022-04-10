@@ -1,4 +1,5 @@
-use sqlx::types::Uuid;
+use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use uuid::Uuid;
 
 use crate::types::{metatime::MetaTime, order_status::OrderStatus};
 
@@ -27,7 +28,7 @@ impl Order {
     serviceman uuid NOT NULL REFERENCES "Staff" ON DELETE restrict ON UPDATE cascade,
     shopman uuid NOT NULL REFERENCES "Staff" ON DELETE restrict ON UPDATE cascade,
     status "OrderStatus" NOT NULL DEFAULT 'Processing',
-    meta metatime DEFAULT (current_timestamp, current_timestamp)
+    meta metatime DEFAULT (now(), now())
 );"#;
 
     pub const DROP: &'static str = r#"DROP TABLE "Order";"#;
@@ -50,5 +51,39 @@ impl Order {
             status,
             meta,
         }
+    }
+
+    pub fn new_auto(
+        client: Uuid,
+        phone: Uuid,
+        serviceman: Uuid,
+        shopman: Uuid,
+        status: OrderStatus,
+    ) -> Self {
+        Self::new(
+            Uuid::new_v4(),
+            client,
+            phone,
+            serviceman,
+            shopman,
+            status,
+            MetaTime::default(),
+        )
+    }
+
+    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+        query(
+            r#"INSERT INTO "Order" (uuid, client, phone, serviceman, shopman, status) 
+VALUES ($1, $2, $3, $4, $5, $6);
+          "#,
+        )
+        .bind(self.uuid)
+        .bind(self.client)
+        .bind(self.phone)
+        .bind(self.serviceman)
+        .bind(self.shopman)
+        .bind(self.status)
+        .execute(pool)
+        .await
     }
 }

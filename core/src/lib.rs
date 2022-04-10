@@ -1,9 +1,12 @@
+pub use chrono;
 pub use sqlx;
+pub use sqlx::types::BigDecimal;
+pub use uuid;
 
 pub mod extensions;
 pub mod tables;
+pub mod traits;
 pub mod types;
 
-// FIX: Replace Instant with something appropriate
 // TODO: Dataset generator
-// TODO: CLI Utility
+// TODO: Batch insert

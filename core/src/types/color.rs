@@ -1,4 +1,5 @@
-#[derive(Debug)]
+#[derive(sqlx::Type, Clone, Copy, Debug)]
+#[sqlx(type_name = "color", rename_all = "PascalCase")]
 pub enum Color {
     Black,
     DarkGray,

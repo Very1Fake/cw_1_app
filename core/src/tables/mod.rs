@@ -16,7 +16,7 @@ pub mod phone;
 pub mod phone_model;
 pub mod position;
 pub mod service;
-pub mod service_component;
+pub mod service_phone_model;
 pub mod staff;
 pub mod supplier;
 pub mod supply;
@@ -30,14 +30,14 @@ pub use component_kind::ComponentKind;
 pub use labor_contract::LaborContract;
 pub use manufacturer::Manufacturer;
 pub use order::Order;
-pub use order_component::OrderComponent;
+pub use order_component::OrderWarehouse;
 pub use order_service::OrderService;
 pub use person::Person;
 pub use phone::Phone;
 pub use phone_model::PhoneModel;
 pub use position::Position;
 pub use service::Service;
-pub use service_component::ServiceComponent;
+pub use service_phone_model::ServicePhoneModel;
 pub use staff::Staff;
 pub use supplier::Supplier;
 pub use supply::Supply;
@@ -65,13 +65,22 @@ pub enum Table {
     Component,
     Warehouse,
     Order,
-    ServiceComponent,
+    ServicePhoneModel,
     WarehouseSupply,
     OrderService,
-    OrderComponent,
+    OrderWarehouse,
 }
 
 impl Table {
+    pub const LOW: [Self; 6] = [
+        Self::Person,
+        Self::Supplier,
+        Self::Manufacturer,
+        Self::Position,
+        Self::Service,
+        Self::ComponentKind,
+    ];
+
     pub const ALL: [Self; 20] = [
         // Low-level tables
         Self::Person,
@@ -93,10 +102,10 @@ impl Table {
         Self::Warehouse,
         Self::Order,
         // Relations tables
-        Self::ServiceComponent,
+        Self::ServicePhoneModel,
         Self::WarehouseSupply,
         Self::OrderService,
-        Self::OrderComponent,
+        Self::OrderWarehouse,
     ];
 
     pub fn name(&self) -> &str {
@@ -117,10 +126,10 @@ impl Table {
             Table::Component => Component::NAME,
             Table::Warehouse => Warehouse::NAME,
             Table::Order => Order::NAME,
-            Table::ServiceComponent => ServiceComponent::NAME,
+            Table::ServicePhoneModel => ServicePhoneModel::NAME,
             Table::WarehouseSupply => WarehouseSupply::NAME,
             Table::OrderService => OrderService::NAME,
-            Table::OrderComponent => OrderComponent::NAME,
+            Table::OrderWarehouse => OrderWarehouse::NAME,
         }
     }
 
@@ -142,10 +151,10 @@ impl Table {
             Table::Component => Component::CREATE,
             Table::Warehouse => Warehouse::CREATE,
             Table::Order => Order::CREATE,
-            Table::ServiceComponent => ServiceComponent::CREATE,
+            Table::ServicePhoneModel => ServicePhoneModel::CREATE,
             Table::WarehouseSupply => WarehouseSupply::CREATE,
             Table::OrderService => OrderService::CREATE,
-            Table::OrderComponent => OrderComponent::CREATE,
+            Table::OrderWarehouse => OrderWarehouse::CREATE,
         }
     }
 
@@ -167,11 +176,15 @@ impl Table {
             Table::Component => Component::DROP,
             Table::Warehouse => Warehouse::DROP,
             Table::Order => Order::DROP,
-            Table::ServiceComponent => ServiceComponent::DROP,
+            Table::ServicePhoneModel => ServicePhoneModel::DROP,
             Table::WarehouseSupply => WarehouseSupply::DROP,
             Table::OrderService => OrderService::DROP,
-            Table::OrderComponent => OrderComponent::DROP,
+            Table::OrderWarehouse => OrderWarehouse::DROP,
         }
+    }
+
+    pub fn truncate_query(&self) -> String {
+        format!(r#"TRUNCATE "{}" RESTART IDENTITY cascade;"#, self.name())
     }
 
     pub async fn exists(&self, pool: &PgPool) -> Result<bool, Error> {
@@ -198,7 +211,7 @@ impl Table {
         pool: &PgPool,
         handler: impl Fn((Table, Result<PgQueryResult, Error>)) -> Result<PgQueryResult, Error>,
     ) -> Result<()> {
-        for table in Table::ALL {
+        for table in Self::ALL {
             handler((table, pool.execute(query(table.create())).await))
                 .with_context(|| format!("While creating '{table}' table"))?;
         }
@@ -211,9 +224,24 @@ impl Table {
         pool: &PgPool,
         handler: impl Fn((Table, Result<PgQueryResult, Error>)) -> Result<PgQueryResult, Error>,
     ) -> Result<()> {
-        for table in Table::ALL.into_iter().rev() {
-            handler((table, pool.execute(query(table.drop())).await))
+        for table in Self::ALL.into_iter().rev() {
+            handler((table, query(table.drop()).execute(pool).await))
                 .with_context(|| format!("While dropping '{table}' table"))?;
+        }
+
+        Ok(())
+    }
+
+    /// Truncates all tables!!!
+    pub async fn truncate(pool: &PgPool, handler: impl Fn((Table, bool))) -> Result<()> {
+        for table in Self::LOW.into_iter() {
+            match query(table.truncate_query().as_str()).execute(pool).await {
+                Ok(_) => handler((table, true)),
+                Err(err) => {
+                    handler((table, false));
+                    return Err(err).with_context(|| format!("While truncating '{table}' table"));
+                }
+            }
         }
 
         Ok(())

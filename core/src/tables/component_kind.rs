@@ -1,4 +1,5 @@
-use sqlx::types::Uuid;
+use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use uuid::Uuid;
 
 pub const KINDS: [(&str, Option<&str>); 16] = [
     ("Battery Li-Pol", Some("Lithium polymer battery")),
@@ -58,5 +59,18 @@ impl ComponentKind {
             name,
             details,
         }
+    }
+
+    pub fn new_auto(name: String, details: Option<String>) -> Self {
+        Self::new(Uuid::new_v4(), name, details)
+    }
+
+    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+        query(r#"INSERT INTO "ComponentKind" (uuid, name, details) VALUES ($1, $2, $3);"#)
+            .bind(self.uuid)
+            .bind(self.name.clone())
+            .bind(self.details.clone())
+            .execute(pool)
+            .await
     }
 }

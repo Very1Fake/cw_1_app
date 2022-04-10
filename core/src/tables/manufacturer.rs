@@ -1,11 +1,11 @@
-use isocountry::CountryCode;
-use sqlx::types::Uuid;
+use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct Manufacturer {
     pub uuid: Uuid,
     pub name: String,
-    pub country: CountryCode,
+    pub country: String,
 }
 
 impl Manufacturer {
@@ -19,11 +19,24 @@ impl Manufacturer {
 
     pub const DROP: &'static str = r#"DROP TABLE "Manufacturer";"#;
 
-    pub const fn new(uuid: Uuid, name: String, country: CountryCode) -> Self {
+    pub const fn new(uuid: Uuid, name: String, country: String) -> Self {
         Self {
             uuid,
             name,
             country,
         }
+    }
+
+    pub fn new_auto(name: String, country: String) -> Self {
+        Self::new(Uuid::new_v4(), name, country)
+    }
+
+    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+        query(r#"INSERT INTO "Manufacturer" (uuid, name, country) VALUES ($1, $2, $3);"#)
+            .bind(self.uuid)
+            .bind(self.name.clone())
+            .bind(self.country.clone())
+            .execute(pool)
+            .await
     }
 }

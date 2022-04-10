@@ -1,9 +1,11 @@
-#[derive(Debug)]
+#[derive(sqlx::Type, Clone, Copy, Debug)]
+#[sqlx(type_name = "SupplyStatus", rename_all = "PascalCase")]
 pub enum SupplyStatus {
     Review,
     Negotiation,
     Signed,
     Paid,
+    Dispatched,
     Delivered,
     Failed,
     Rejected,
@@ -17,6 +19,7 @@ impl SupplyStatus {
     'Negotiation',
     'Signed',
     'Paid',
+    'Dispatched',
     'Delivered',
     'Failed',
     'Rejected'

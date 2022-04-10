@@ -1,4 +1,5 @@
-#[derive(Debug)]
+#[derive(sqlx::Type, Clone, Copy, Debug)]
+#[sqlx(type_name = "AccountStatus", rename_all = "PascalCase")]
 pub enum AccountStatus {
     Active,
     Expired,
@@ -15,4 +16,14 @@ impl AccountStatus {
 );"#;
 
     pub const DROP: &'static str = r#"DROP TYPE "AccountStatus";"#;
+
+    pub fn as_str(&self) -> &str {
+        use AccountStatus::*;
+
+        match self {
+            Active => "Active",
+            Expired => "Expired",
+            Inactive => "Inactive",
+        }
+    }
 }

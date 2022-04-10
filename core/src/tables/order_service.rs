@@ -1,4 +1,5 @@
-use sqlx::types::Uuid;
+use sqlx::{postgres::PgQueryResult, query, types::BigDecimal, Error, PgPool};
+use uuid::Uuid;
 
 /// Represents relation table between [`Order`](`super::order::Order`) and [`Service`](`super::service::Service`)
 #[derive(Debug)]
@@ -7,7 +8,7 @@ pub struct OrderService {
     pub order: Uuid,
     /// Foreign key references [`Service`](`super::service::Service`)
     pub service: Uuid,
-    pub price: f64,
+    pub price: BigDecimal,
 }
 
 impl OrderService {
@@ -21,11 +22,20 @@ impl OrderService {
 
     pub const DROP: &'static str = r#"DROP TABLE "OrderService";"#;
 
-    pub const fn new(order: Uuid, service: Uuid, price: f64) -> Self {
+    pub const fn new(order: Uuid, service: Uuid, price: BigDecimal) -> Self {
         Self {
             order,
             service,
             price,
         }
+    }
+
+    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+        query(r#"INSERT INTO "OrderService" VALUES ($1, $2, $3);"#)
+            .bind(self.order)
+            .bind(self.service)
+            .bind(self.price.clone())
+            .execute(pool)
+            .await
     }
 }

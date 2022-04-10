@@ -1,4 +1,5 @@
-use sqlx::types::Uuid;
+use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use uuid::Uuid;
 
 use crate::types::metatime::MetaTime;
 
@@ -23,7 +24,7 @@ impl Person {
     last_name text NOT NULL,
     email text UNIQUE NOT NULL CHECK (length(email) <= 254),
     phone text UNIQUE NOT NULL CHECK (length(phone) <= 18),
-    meta metatime NOT NULL DEFAULT (current_timestamp, current_timestamp)
+    meta metatime NOT NULL DEFAULT (now(), now())
 );"#;
 
     pub const DROP: &'static str = r#"DROP TABLE "Person";"#;
@@ -46,5 +47,39 @@ impl Person {
             phone,
             meta,
         }
+    }
+
+    pub fn new_auto(
+        f_name: String,
+        m_name: Option<String>,
+        l_name: String,
+        email: String,
+        phone: String,
+    ) -> Self {
+        Self::new(
+            Uuid::new_v4(),
+            f_name,
+            m_name,
+            l_name,
+            email,
+            phone,
+            MetaTime::default(),
+        )
+    }
+
+    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+        query(
+            r#"INSERT INTO "Person"
+(uuid, first_name, middle_name, last_name, email, phone) 
+VALUES ($1, $2, $3, $4, $5, $6);"#,
+        )
+        .bind(self.uuid)
+        .bind(self.first_name.clone())
+        .bind(self.middle_name.clone())
+        .bind(self.last_name.clone())
+        .bind(self.email.clone())
+        .bind(self.phone.clone())
+        .execute(pool)
+        .await
     }
 }

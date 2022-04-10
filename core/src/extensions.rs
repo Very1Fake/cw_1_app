@@ -1,7 +1,7 @@
 use core::fmt;
 
 use anyhow::{Context, Result};
-use sqlx::{postgres::PgDatabaseError, query, query_as, Error, Executor, PgPool, Postgres};
+use sqlx::{postgres::PgDatabaseError, query, query_as, Error, PgPool, Postgres};
 
 pub use uuid_ossp::UuidOssp;
 
@@ -55,8 +55,8 @@ impl Extension {
 
     /// Loads all postgresql extensions necessary for application
     pub async fn create_all(pool: &PgPool, printer: impl Fn((Extension, bool))) -> Result<()> {
-        for extension in Extension::ALL {
-            match pool.execute(query(extension.create())).await {
+        for extension in Self::ALL {
+            match query(extension.create()).execute(pool).await {
                 Ok(_) => printer((extension, true)),
                 Err(err) => {
                     if let Error::Database(err) = &err {
@@ -77,8 +77,8 @@ impl Extension {
 
     /// Unloads all postgresql extensions
     pub async fn drop_all(pool: &PgPool, printer: impl Fn((Extension, bool))) -> Result<()> {
-        for extension in Extension::ALL {
-            match pool.execute(query(extension.drop())).await {
+        for extension in Self::ALL {
+            match query(extension.drop()).execute(pool).await {
                 Ok(_) => printer((extension, true)),
                 Err(err) => {
                     if let Error::Database(err) = &err {

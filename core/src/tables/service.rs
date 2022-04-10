@@ -1,4 +1,5 @@
-use sqlx::types::Uuid;
+use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use uuid::Uuid;
 
 use crate::types::metatime::MetaTime;
 
@@ -7,7 +8,6 @@ pub struct Service {
     pub uuid: Uuid,
     pub name: String,
     pub description: Option<String>,
-    pub price: f64,
     pub meta: MetaTime,
 }
 
@@ -18,8 +18,7 @@ impl Service {
     uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     name text NOT NULL UNIQUE,
     description text,
-    price money NOT NULL,
-    meta metatime NOT NULL DEFAULT (current_timestamp, current_timestamp)
+    meta metatime NOT NULL DEFAULT (now(), now())
 );"#;
 
     pub const DROP: &'static str = r#"DROP TABLE "Service";"#;
@@ -28,15 +27,29 @@ impl Service {
         uuid: Uuid,
         name: String,
         description: Option<String>,
-        price: f64,
         meta: MetaTime,
     ) -> Self {
         Self {
             uuid,
             name,
             description,
-            price,
             meta,
         }
+    }
+
+    pub fn new_auto(name: String, description: Option<String>) -> Self {
+        Self::new(Uuid::new_v4(), name, description, MetaTime::default())
+    }
+
+    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+        query(
+            r#"INSERT INTO "Service" (uuid, name, description)
+    VALUES ($1, $2, $3);"#,
+        )
+        .bind(self.uuid)
+        .bind(self.name.clone())
+        .bind(self.description.clone())
+        .execute(pool)
+        .await
     }
 }

@@ -14,7 +14,10 @@ pub enum Command {
     #[clap(alias = "db")]
     Database(DatabaseOpt),
     #[clap(alias = "gen")]
-    Generate {},
+    Generate {
+        #[clap(flatten)]
+        uri: DatabaseUri,
+    },
 }
 
 #[derive(Parser, Debug)]
@@ -37,6 +40,8 @@ pub enum Database {
         #[clap(short, long)]
         fix: bool,
     },
+    #[clap(alias = "t")]
+    Truncate,
 }
 
 #[derive(Args, Debug)]

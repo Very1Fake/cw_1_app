@@ -1,4 +1,4 @@
-use sqlx::types::Uuid;
+use sqlx::{postgres::PgQueryResult, query, types::Uuid, Error, PgPool};
 
 use crate::types::{account_role::AccountRole, account_status::AccountStatus, metatime::MetaTime};
 
@@ -47,5 +47,38 @@ impl Account {
             status,
             meta,
         }
+    }
+
+    pub fn new_auto(
+        staff: Uuid,
+        login: String,
+        password: String,
+        role: AccountRole,
+        status: AccountStatus,
+    ) -> Self {
+        Self::new(
+            Uuid::new_v4(),
+            staff,
+            login,
+            password,
+            role,
+            status,
+            MetaTime::default(),
+        )
+    }
+
+    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+        query(
+            r#"INSERT INTO "Account" (uuid, staff, login, password, role, status) 
+VALUES ($1, $2, $3, $4, $5, $6);"#,
+        )
+        .bind(self.uuid)
+        .bind(self.staff)
+        .bind(self.login.clone())
+        .bind(self.password.clone())
+        .bind(self.role)
+        .bind(self.status)
+        .execute(pool)
+        .await
     }
 }
