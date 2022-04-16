@@ -3,6 +3,7 @@
 pub enum AccountRole {
     Admin,
     Manager,
+    #[sqlx(rename = "HR")]
     HR,
     Accountant,
     Serviceman,

@@ -23,6 +23,14 @@ impl Service {
 
     pub const DROP: &'static str = r#"DROP TABLE "Service";"#;
 
+    pub const SAMPLES: [(&'static str, Option<&'static str>); 5] = [
+        ("Battery replacement", None),
+        ("Display replacement", None),
+        ("RAM Fix", Some("Replace malfunctioning RAM bank")),
+        ("Memory Fix", Some("Replace malfunctioning memory bank")),
+        ("Display glass replacement", None),
+    ];
+
     pub const fn new(
         uuid: Uuid,
         name: String,

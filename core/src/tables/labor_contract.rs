@@ -72,7 +72,7 @@ VALUES ($1, $2, $3, $4, $5);"#,
         .bind(self.person)
         .bind(self.passport.clone())
         .bind(self.status)
-        .bind(self.signed.clone())
+        .bind(self.signed)
         .execute(pool)
         .await
     }

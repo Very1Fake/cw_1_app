@@ -1,7 +1,7 @@
 use sqlx::{postgres::PgQueryResult, query, types::BigDecimal, Error, PgPool};
 use uuid::Uuid;
 
-use crate::types::metatime::MetaTime;
+use crate::types::{metatime::MetaTime, AccountRole};
 
 #[derive(Debug)]
 pub struct Position {
@@ -26,6 +26,25 @@ impl Position {
     pub const DROP: &'static str = r#"
     DROP TABLE "Position";
     "#;
+
+    /// Sample positions with hints for chances and account roles
+    pub const SAMPLES: [(&'static str, i64, u16, AccountRole); 10] = [
+        ("Director", 500000, 10, AccountRole::Admin),
+        ("Manager", 300000, 15, AccountRole::Manager),
+        ("Developer", 250000, 10, AccountRole::Admin),
+        ("DB Administrator", 150000, 10, AccountRole::Admin),
+        ("Chief HR", 125000, 5, AccountRole::HR),
+        ("HR", 100000, 10, AccountRole::HR),
+        ("Serviceman", 75000, 30, AccountRole::Serviceman),
+        ("Shopman", 50000, 25, AccountRole::Shopman),
+        (
+            "Chief Warehouse Worker",
+            75000,
+            5,
+            AccountRole::WarehouseWorker,
+        ),
+        ("Warehouse Worker", 40000, 25, AccountRole::WarehouseWorker),
+    ];
 
     pub const fn new(
         uuid: Uuid,

@@ -1,40 +1,6 @@
 use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
 use uuid::Uuid;
 
-pub const KINDS: [(&str, Option<&str>); 16] = [
-    ("Battery Li-Pol", Some("Lithium polymer battery")),
-    ("Battery Li-Ion", Some("Lithium ion battery")),
-    ("Battery Ni-CD", Some("Nickel cadmium battery")),
-    ("Battery Ni-MH", Some("Nickel metal hydride battery")),
-    ("Display (IPS)", None),
-    ("Display (AMOLED)", None),
-    ("Display (Super AMOLED)", None),
-    ("RAM (LPDDR4)", None),
-    ("RAM (LPDDR4X)", None),
-    ("RAM (LPDDR5)", None),
-    (
-        "Memory (eMMC v4.5)",
-        Some("embedded MultiMediaCard. Speed: ~140Mb/s"),
-    ),
-    (
-        "Memory (eMMC v5.0)",
-        Some("embedded MultiMediaCard. Speed: ~250Mb/s"),
-    ),
-    (
-        "Memory (UFC v2.2)",
-        Some("Universal Flash Storage. Speed: ~1200Mb/s"),
-    ),
-    (
-        "Memory (UFC v3.0)",
-        Some("Universal Flash Storage. Speed: ~2900Mb/s"),
-    ),
-    (
-        "Memory (UFC v3.1)",
-        Some("Universal Flash Storage. Speed: ~2900Mb/s"),
-    ),
-    ("Glass ", Some("")),
-];
-
 #[derive(Debug)]
 pub struct ComponentKind {
     pub uuid: Uuid,
@@ -52,6 +18,40 @@ impl ComponentKind {
 )"#;
 
     pub const DROP: &'static str = r#"DROP TABLE "ComponentKind";"#;
+
+    pub const SAMPLES: [(&'static str, Option<&'static str>); 16] = [
+        ("Battery Li-Pol", Some("Lithium polymer battery")),
+        ("Battery Li-Ion", Some("Lithium ion battery")),
+        ("Battery Ni-CD", Some("Nickel cadmium battery")),
+        ("Battery Ni-MH", Some("Nickel metal hydride battery")),
+        ("Display (IPS)", None),
+        ("Display (AMOLED)", None),
+        ("Display (Super AMOLED)", None),
+        ("RAM (LPDDR4)", None),
+        ("RAM (LPDDR4X)", None),
+        ("RAM (LPDDR5)", None),
+        (
+            "Memory (eMMC v4.5)",
+            Some("embedded MultiMediaCard. Speed: ~140Mb/s"),
+        ),
+        (
+            "Memory (eMMC v5.0)",
+            Some("embedded MultiMediaCard. Speed: ~250Mb/s"),
+        ),
+        (
+            "Memory (UFC v2.2)",
+            Some("Universal Flash Storage. Speed: ~1200Mb/s"),
+        ),
+        (
+            "Memory (UFC v3.0)",
+            Some("Universal Flash Storage. Speed: ~2900Mb/s"),
+        ),
+        (
+            "Memory (UFC v3.1)",
+            Some("Universal Flash Storage. Speed: ~2900Mb/s"),
+        ),
+        ("Display Glass", None),
+    ];
 
     pub const fn new(uuid: Uuid, name: String, details: Option<String>) -> Self {
         Self {

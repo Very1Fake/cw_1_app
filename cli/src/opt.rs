@@ -4,9 +4,22 @@ use clap::{Args, Parser};
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
 pub struct Opt {
+    // Pool options
+    #[clap(flatten)]
+    pub pool_opts: PoolOpts,
     /// SubCommands
     #[clap(subcommand)]
     pub command: Command,
+}
+
+#[derive(Args, Debug)]
+pub struct PoolOpts {
+    // Set the minimum number of connections in the pool
+    #[clap(short = 'm', long, default_value = "1", env = "DB_MIN_CONNS")]
+    pub min_conns: u32,
+    // Set the maximum number of connections in the pool
+    #[clap(short = 'M', long, default_value = "16", env = "DB_MAX_CONNS")]
+    pub max_conns: u32,
 }
 
 #[derive(Parser, Debug)]

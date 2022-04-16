@@ -7,6 +7,8 @@ pub enum AccountStatus {
 }
 
 impl AccountStatus {
+    pub const ALL: [Self; 3] = [Self::Active, Self::Expired, Self::Inactive];
+
     pub const NAME: &'static str = "AccountStatus";
 
     pub const CREATE: &'static str = r#"CREATE TYPE "AccountStatus" AS ENUM(

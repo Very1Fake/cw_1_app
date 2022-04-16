@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::types::staff_status::StaffStatus;
 
-#[derive()]
+#[derive(Debug)]
 pub struct Staff {
     pub uuid: Uuid,
     /// Foreign key references [`LaborContract`](`super::labor_contract::LaborContract`)

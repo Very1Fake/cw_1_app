@@ -19,6 +19,9 @@ impl Manufacturer {
 
     pub const DROP: &'static str = r#"DROP TABLE "Manufacturer";"#;
 
+    pub const SAMPLES: [(&'static str, &'static str); 3] =
+        [("Apple", "US"), ("Samsung", "KR"), ("Huawei", "CN")];
+
     pub const fn new(uuid: Uuid, name: String, country: String) -> Self {
         Self {
             uuid,

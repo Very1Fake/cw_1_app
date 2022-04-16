@@ -9,6 +9,14 @@ pub enum ContractStatus {
 }
 
 impl ContractStatus {
+    pub const ALL: [Self; 5] = [
+        Self::Review,
+        Self::Negotiation,
+        Self::Active,
+        Self::Expired,
+        Self::Void,
+    ];
+
     pub const NAME: &'static str = "ContractStatus";
 
     pub const CREATE: &'static str = r#"CREATE TYPE "ContractStatus" AS ENUM(
