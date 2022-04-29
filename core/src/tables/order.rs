@@ -1,9 +1,10 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
 use uuid::Uuid;
 
 use crate::types::{metatime::MetaTime, order_status::OrderStatus};
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Order {
     pub uuid: Uuid,
     /// Foreign key references [`Person`](`super::person::Person`)

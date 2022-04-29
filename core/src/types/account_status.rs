@@ -1,4 +1,6 @@
-#[derive(sqlx::Type, Clone, Copy, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, sqlx::Type, Clone, Copy, Debug)]
 #[sqlx(type_name = "AccountStatus", rename_all = "PascalCase")]
 pub enum AccountStatus {
     Active,

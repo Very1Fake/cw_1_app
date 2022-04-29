@@ -1,9 +1,10 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, types::BigDecimal, Error, PgPool};
 use uuid::Uuid;
 
 use crate::types::{metatime::MetaTime, AccountRole};
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Position {
     pub uuid: Uuid,
     pub name: String,
@@ -30,7 +31,7 @@ impl Position {
     /// Sample positions with hints for chances and account roles
     pub const SAMPLES: [(&'static str, i64, u16, AccountRole); 10] = [
         ("Director", 500000, 10, AccountRole::Admin),
-        ("Manager", 300000, 15, AccountRole::Manager),
+        ("Manager", 300000, 20, AccountRole::Manager),
         ("Developer", 250000, 10, AccountRole::Admin),
         ("DB Administrator", 150000, 10, AccountRole::Admin),
         ("Chief HR", 125000, 5, AccountRole::HR),

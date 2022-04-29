@@ -1,4 +1,6 @@
-#[derive(sqlx::Type, Clone, Copy, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, sqlx::Type, Clone, Copy, Debug)]
 #[sqlx(type_name = "color", rename_all = "PascalCase")]
 pub enum Color {
     Black,
@@ -23,6 +25,28 @@ pub enum Color {
 }
 
 impl Color {
+    pub const ALL: [Self; 19] = [
+        Self::Black,
+        Self::DarkGray,
+        Self::Gray,
+        Self::LightGray,
+        Self::White,
+        Self::Brown,
+        Self::DarkRed,
+        Self::Red,
+        Self::LightRed,
+        Self::Yellow,
+        Self::LightYellow,
+        Self::Khaki,
+        Self::DarkGreen,
+        Self::Green,
+        Self::LightGreen,
+        Self::DarkBlue,
+        Self::Blue,
+        Self::LightBlue,
+        Self::Gold,
+    ];
+
     pub const NAME: &'static str = "color";
 
     pub const CREATE: &'static str = "CREATE TYPE color AS ENUM (

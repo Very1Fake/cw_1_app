@@ -1,7 +1,8 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PhoneModel {
     pub uuid: Uuid,
     pub name: String,
@@ -21,6 +22,15 @@ impl PhoneModel {
 );"#;
 
     pub const DROP: &'static str = r#"DROP TABLE "PhoneModel";"#;
+
+    pub const SAMPLES: [(&'static str, &'static str, &'static str, f64); 6] = [
+        ("IPhone 13", "A dramatically more powerful camera system. A display so responsive, every interaction feels new again. The world's fastest smartphone chip. Exceptional durability. And a huge leap in battery life. Let's Pro.", "Apple", 1.45),
+        ("IPhone 13 Pro", "", "Apple", 1.5),
+        ("IPhone XR", "", "Apple", 1.25),
+        ("Galaxy S21 FE Pro", "Get more out of the activities you heart most with Galaxy S21 FE 5G. We took all your favorites and built the ultimate fan-inspired phone jam-packed with features to fuel your passions. Whether you're a gaming guru or social media star, this crowd pleaser has the style, power and pro-grade camera to unleash epic in the everyday.", "Samsung", 1.3),
+        ("Galaxy S22 Ultra", "", "Samsung", 1.3),
+        ("Galaxy S22+", "", "Samsung", 1.25),
+    ];
 
     pub const fn new(
         uuid: Uuid,

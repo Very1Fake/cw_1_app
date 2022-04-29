@@ -1,9 +1,10 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
 use uuid::Uuid;
 
 use crate::types::metatime::MetaTime;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Person {
     pub uuid: Uuid,
     pub first_name: String,

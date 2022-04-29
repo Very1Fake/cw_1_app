@@ -1,9 +1,10 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
 use uuid::Uuid;
 
 use crate::types::staff_status::StaffStatus;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Staff {
     pub uuid: Uuid,
     /// Foreign key references [`LaborContract`](`super::labor_contract::LaborContract`)

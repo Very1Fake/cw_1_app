@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 use sqlx::{postgres::PgQueryResult, query, query_as, Error, Executor, PgPool, Postgres};
 
 pub mod account;
+pub mod audit_log;
 pub mod component;
 pub mod component_kind;
 pub mod labor_contract;
@@ -25,6 +26,7 @@ pub mod warehouse;
 pub mod warehouse_supply;
 
 pub use account::Account;
+pub use audit_log::AuditLog;
 pub use component::Component;
 pub use component_kind::ComponentKind;
 pub use labor_contract::LaborContract;
@@ -61,6 +63,7 @@ pub enum Table {
     Phone,
     SupplyContract,
     Supply,
+    AuditLog,
     Account,
     Component,
     Warehouse,
@@ -81,7 +84,7 @@ impl Table {
         Self::ComponentKind,
     ];
 
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 21] = [
         // Low-level tables
         Self::Person,
         Self::Supplier,
@@ -97,6 +100,7 @@ impl Table {
         Self::SupplyContract,
         Self::Supply,
         // High-level tables
+        Self::AuditLog,
         Self::Account,
         Self::Component,
         Self::Warehouse,
@@ -122,6 +126,7 @@ impl Table {
             Table::Phone => Phone::NAME,
             Table::SupplyContract => SupplyContract::NAME,
             Table::Supply => Supply::NAME,
+            Table::AuditLog => AuditLog::NAME,
             Table::Account => Account::NAME,
             Table::Component => Component::NAME,
             Table::Warehouse => Warehouse::NAME,
@@ -147,6 +152,7 @@ impl Table {
             Table::Phone => Phone::CREATE,
             Table::SupplyContract => SupplyContract::CREATE,
             Table::Supply => Supply::CREATE,
+            Table::AuditLog => AuditLog::CREATE,
             Table::Account => Account::CREATE,
             Table::Component => Component::CREATE,
             Table::Warehouse => Warehouse::CREATE,
@@ -172,6 +178,7 @@ impl Table {
             Table::Phone => Phone::DROP,
             Table::SupplyContract => SupplyContract::DROP,
             Table::Supply => Supply::DROP,
+            Table::AuditLog => AuditLog::DROP,
             Table::Account => Account::DROP,
             Table::Component => Component::DROP,
             Table::Warehouse => Warehouse::DROP,

@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, types::Uuid, Error, PgPool};
 
 use crate::types::{account_role::AccountRole, account_status::AccountStatus, metatime::MetaTime};
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Account {
     pub uuid: Uuid,
     /// Foreign key references [`Staff`](`super::staff::Staff`)

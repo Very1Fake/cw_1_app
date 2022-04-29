@@ -1,4 +1,6 @@
-#[derive(sqlx::Type, Clone, Copy, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, sqlx::Type, Clone, Copy, Debug)]
 #[sqlx(type_name = "AccountRole", rename_all = "PascalCase")]
 pub enum AccountRole {
     Admin,

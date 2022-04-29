@@ -1,9 +1,10 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
 use uuid::Uuid;
 
 /// Represents relation table between [`Warehouse`](`super::warehouse::Warehouse`) and [`Supply`](`super::supply::Supply`)
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct WarehouseSupply {
     /// Foreign key references [`Warehouse`](`super::warehouse::Warehouse`)
     pub item: Uuid,

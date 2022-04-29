@@ -1,4 +1,6 @@
-use clap::{Args, Parser};
+use std::path::PathBuf;
+
+use clap::{ArgEnum, Args, Parser};
 
 /// Utility for fast operations with database
 #[derive(Parser, Debug)]
@@ -26,11 +28,8 @@ pub struct PoolOpts {
 pub enum Command {
     #[clap(alias = "db")]
     Database(DatabaseOpt),
-    #[clap(alias = "gen")]
-    Generate {
-        #[clap(flatten)]
-        uri: DatabaseUri,
-    },
+    #[clap(subcommand, alias = "gen")]
+    Generate(Generate),
 }
 
 #[derive(Parser, Debug)]
@@ -57,9 +56,44 @@ pub enum Database {
     Truncate,
 }
 
+#[derive(Parser, Debug)]
+pub enum Generate {
+    #[clap(alias = "p")]
+    Push {
+        #[clap(flatten)]
+        uri: DatabaseUri,
+    },
+    #[clap(alias = "d")]
+    Dump {
+        /// Path to dump file
+        #[clap(short, long, default_value = "./cw1_generator.dump.json")]
+        path: PathBuf,
+    },
+}
+
 #[derive(Args, Debug)]
 pub struct DatabaseUri {
+    /// SSL mode
+    #[clap(
+        arg_enum,
+        short = 's',
+        long = "sslmode",
+        default_value = "Require",
+        env = "DB_SSL"
+    )]
+    pub ssl_mode: SslMode,
     /// Database uri (e.g. 'postgres://user:pass@host:port/db')
     #[clap(short = 'd', long = "uri", env = "DB_URI")]
     pub inner: String,
+}
+
+#[derive(ArgEnum, Clone, Copy, Debug)]
+#[clap(rename_all = "PascalCase")]
+pub enum SslMode {
+    Disable,
+    Allow,
+    Prefer,
+    Require,
+    VerifyCa,
+    VerifyFull,
 }

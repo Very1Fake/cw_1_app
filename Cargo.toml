@@ -6,6 +6,11 @@ members = [
 ]
 
 
+[profile.releasedebug]
+inherits = "release"
+debug = true
+
+
 [profile.final]
 inherits = "release"
 strip = true

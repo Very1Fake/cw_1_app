@@ -12,3 +12,5 @@ async fn main() -> Result<()> {
     app(args).await?;
     Ok(())
 }
+
+// TODO: Move opt.rs to builder API

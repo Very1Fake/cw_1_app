@@ -1,4 +1,6 @@
-#[derive(sqlx::Type, Clone, Copy, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, sqlx::Type, Clone, Copy, Debug)]
 #[sqlx(type_name = "ContractStatus", rename_all = "PascalCase")]
 pub enum ContractStatus {
     Review,
@@ -6,15 +8,17 @@ pub enum ContractStatus {
     Active,
     Expired,
     Void,
+    Rejected,
 }
 
 impl ContractStatus {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
         Self::Review,
         Self::Negotiation,
         Self::Active,
         Self::Expired,
         Self::Void,
+        Self::Rejected,
     ];
 
     pub const NAME: &'static str = "ContractStatus";
@@ -24,7 +28,8 @@ impl ContractStatus {
     'Negotiation',
     'Active',
     'Expired',
-    'Void'
+    'Void',
+    'Rejected'
 );"#;
 
     pub const DROP: &'static str = r#"DROP TYPE "ContractStatus";"#;
@@ -38,6 +43,7 @@ impl ContractStatus {
             Active => "Active",
             Expired => "Expired",
             Void => "Void",
+            Rejected => "Rejected",
         }
     }
 }

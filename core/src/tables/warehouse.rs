@@ -1,9 +1,10 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, types::BigDecimal, Error, PgPool};
 use uuid::Uuid;
 
 use crate::types::MetaTime;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Warehouse {
     pub uuid: Uuid,
     /// Foreign key references [`Component`](`super::component::Component`)

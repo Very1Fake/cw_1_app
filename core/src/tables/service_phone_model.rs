@@ -1,10 +1,11 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, types::BigDecimal, Error, PgPool};
 use uuid::Uuid;
 
 use crate::types::MetaTime;
 
 /// Represents relation table between [`Service`](`super::service::Service`) and [`PhoneModel`](`super::phone_model::PhoneModel`)
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ServicePhoneModel {
     /// Foreign key references [`Service`](`super::service::Service`)
     pub service: Uuid,

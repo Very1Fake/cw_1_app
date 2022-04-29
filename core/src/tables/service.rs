@@ -1,9 +1,10 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
 use uuid::Uuid;
 
 use crate::types::metatime::MetaTime;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Service {
     pub uuid: Uuid,
     pub name: String,
@@ -23,12 +24,27 @@ impl Service {
 
     pub const DROP: &'static str = r#"DROP TABLE "Service";"#;
 
-    pub const SAMPLES: [(&'static str, Option<&'static str>); 5] = [
-        ("Battery replacement", None),
-        ("Display replacement", None),
-        ("RAM Fix", Some("Replace malfunctioning RAM bank")),
-        ("Memory Fix", Some("Replace malfunctioning memory bank")),
-        ("Display glass replacement", None),
+    pub const SAMPLES: [(&'static str, Option<&'static str>, f64, &'static str); 5] = [
+        ("Battery replacement", None, 10000.0, "Battery"),
+        (
+            "Screen display replacement",
+            None,
+            15000.0,
+            "Screen Display",
+        ),
+        (
+            "RAM Fix",
+            Some("Replace malfunctioning RAM bank"),
+            25000.0,
+            "RAM",
+        ),
+        (
+            "Memory Fix",
+            Some("Replace malfunctioning memory bank"),
+            20000.0,
+            "Memory",
+        ),
+        ("Screen glass replacement", None, 12500.0, "Screen Glass"),
     ];
 
     pub const fn new(

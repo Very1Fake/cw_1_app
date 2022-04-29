@@ -1,7 +1,8 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Manufacturer {
     pub uuid: Uuid,
     pub name: String,
@@ -19,8 +20,12 @@ impl Manufacturer {
 
     pub const DROP: &'static str = r#"DROP TABLE "Manufacturer";"#;
 
-    pub const SAMPLES: [(&'static str, &'static str); 3] =
-        [("Apple", "US"), ("Samsung", "KR"), ("Huawei", "CN")];
+    pub const SAMPLES: [(&'static str, &'static str); 4] = [
+        ("Apple", "US"),
+        ("Samsung", "KR"),
+        ("Huawei", "CN"),
+        ("FoxCon", "CN"),
+    ];
 
     pub const fn new(uuid: Uuid, name: String, country: String) -> Self {
         Self {

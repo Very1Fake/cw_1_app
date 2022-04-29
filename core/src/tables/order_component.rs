@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgQueryResult, query, types::BigDecimal, Error, PgPool};
 use uuid::Uuid;
 
 /// Represents relation table between [`Order`](`super::order::Order`) and [`Warehouse`](`super::warehouse::Warehouse`)
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct OrderWarehouse {
     /// Foreign key references [`Order`](`super::order::Order`)
     pub order: Uuid,
