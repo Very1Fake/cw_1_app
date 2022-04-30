@@ -4,16 +4,19 @@ use anyhow::{Context, Result};
 
 use cw_core::{
     extensions::Extension,
+    functions::Function,
     generator::Config,
+    procedures::Procedure,
     sqlx::{
         pool::PoolOptions,
-        postgres::{PgConnectOptions, PgQueryResult, PgSslMode},
+        postgres::{PgConnectOptions, PgSslMode},
         query, Error, Executor, PgPool,
     },
     tables::Table,
+    traits::Insertable,
     types::DbType,
 };
-use futures::future::{try_join_all, BoxFuture};
+use futures::future::try_join_all;
 use serde_json::{json, to_string};
 
 use crate::opt::{Command, Database, DatabaseOpt, DatabaseUri, Generate, Opt, PoolOpts, SslMode};
@@ -25,55 +28,95 @@ pub async fn app(opt: Opt) -> Result<()> {
             match command {
                 Database::Create => {
                     println!("\n- Loading extensions");
-                    Extension::create_all(&pool, |(e, p)| {
+                    Extension::create_all(&pool, |(extension, p)| {
                         if p {
-                            println!("> Extension '{e}' has been loaded")
+                            println!("> Extension '{extension}' has been loaded")
                         }
                     })
                     .await?;
-                    println!("- Loading extensions: Done!");
+                    println!("- Done\n");
                     println!("\n- Creating types");
-                    DbType::create_all(&pool, |(t, r)| {
-                        match &r {
-                            Ok(_) => println!("> Type '{t}' has been created"),
+                    DbType::create_all(&pool, |(db_type, result)| {
+                        match &result {
+                            Ok(_) => println!("> Type '{db_type}' has been created"),
                             Err(_) => (),
                         };
-                        r
+                        result
                     })
                     .await?;
-                    println!("- Creating types: Done!");
+                    println!("- Done\n");
                     println!("\n- Creating tables");
-                    Table::create_all(&pool, |(t, r)| {
-                        match &r {
-                            Ok(_) => println!("> Table '{t}' has been created"),
+                    Table::create_all(&pool, |(table, result)| {
+                        match &result {
+                            Ok(_) => println!("> Table '{table}' has been created"),
                             Err(_) => (),
                         };
-                        r
+                        result
                     })
                     .await?;
-                    println!("- Creating tables: Done!");
+                    println!("- Done\n");
+                    println!("\n- Creating functions");
+                    Function::create_all(&pool, |(function, result)| {
+                        match &result {
+                            Ok(_) => println!("> Function '{function}' has been created"),
+                            Err(_) => (),
+                        };
+                        result
+                    })
+                    .await?;
+                    println!("- Done\n");
+                    println!("\n- Creating procedures");
+                    Procedure::create_all(&pool, |(procedure, result)| {
+                        match &result {
+                            Ok(_) => println!("> Procedure '{procedure}' has been created"),
+                            Err(_) => (),
+                        };
+                        result
+                    })
+                    .await?;
+                    println!("- Done\n");
                 }
                 Database::Drop => {
+                    print!("\n- Dropping procedures");
+                    Procedure::drop_all(&pool, |(procedure, result)| {
+                        match &result {
+                            Ok(_) => println!("> Procedure '{procedure}' has been dropped"),
+                            Err(_) => (),
+                        }
+                        result
+                    })
+                    .await?;
+                    println!("- Done\n");
                     println!("\n- Dropping tables");
-                    Table::drop_all(&pool, |(t, r)| {
-                        match &r {
-                            Ok(_) => println!("> Table '{t}' has been dropped"),
+                    Table::drop_all(&pool, |(table, result)| {
+                        match &result {
+                            Ok(_) => println!("> Table '{table}' has been dropped"),
                             Err(_) => (),
                         }
-                        r
+                        result
                     })
                     .await?;
-                    println!("- Dropping tables: Done!");
+                    println!("- Done\n");
+                    println!("\n- Dropping functions");
+                    Function::drop_all(&pool, |(function, result)| {
+                        match &result {
+                            Ok(_) => println!("> Function '{function}' has been dropped"),
+                            Err(_) => (),
+                        }
+                        result
+                    })
+                    .await?;
+                    println!("- Done\n");
                     println!("\n- Dropping types");
-                    DbType::drop_all(&pool, |(t, r)| {
-                        match &r {
-                            Ok(_) => println!("> Type '{t}' has been dropped"),
+                    DbType::drop_all(&pool, |(db_type, result)| {
+                        match &result {
+                            Ok(_) => println!("> Type '{db_type}' has been dropped"),
                             Err(_) => (),
                         }
-                        r
+                        result
                     })
                     .await?;
-                    println!("- Dropping types: Done!");
+                    println!("- Done\n");
                     println!("\n- Unloading extensions");
                     Extension::drop_all(&pool, |(e, p)| {
                         if p {
@@ -81,12 +124,12 @@ pub async fn app(opt: Opt) -> Result<()> {
                         }
                     })
                     .await?;
-                    println!("- Unloading extensions: Done!");
+                    println!("- Done\n");
                 }
                 Database::Check { fix } => {
                     println!("\n- Checking extensions");
                     for e in Extension::ALL {
-                        print!("> Checking '{e}' extension: ");
+                        print!("> Checking '{e}' extension : ");
                         if e.exists(&pool)
                             .await
                             .context("While checking extension existence")?
@@ -96,7 +139,7 @@ pub async fn app(opt: Opt) -> Result<()> {
                             println!("Not Loaded");
 
                             if fix {
-                                print!(">> Trying to load extension '{e}': ");
+                                print!(">> Trying to load extension '{e}' : ");
                                 match pool.execute(query(e.create())).await {
                                     Ok(_) => println!("OK\n"),
                                     Err(_) => {
@@ -106,10 +149,11 @@ pub async fn app(opt: Opt) -> Result<()> {
                             }
                         }
                     }
+                    println!("- Done\n");
 
                     println!("\n- Checking types");
                     for t in DbType::ALL {
-                        print!("> Checking '{t}' type: ");
+                        print!("> Checking '{t}' type : ");
                         if t.exists(&pool)
                             .await
                             .context("While checking type existence")?
@@ -119,7 +163,7 @@ pub async fn app(opt: Opt) -> Result<()> {
                             println!("Not Exists");
 
                             if fix {
-                                print!(">> Trying to create type '{t}': ");
+                                print!(">> Trying to create type '{t}' : ");
                                 match pool.execute(query(t.create())).await {
                                     Ok(_) => println!("OK\n"),
                                     Err(err) => {
@@ -129,21 +173,23 @@ pub async fn app(opt: Opt) -> Result<()> {
                             }
                         }
                     }
+                    println!("- Done\n");
 
                     println!("\n- Checking tables");
-                    for t in Table::ALL {
-                        print!("> Checking '{t}' table: ");
-                        if t.exists(&pool)
+                    for table in Table::ALL {
+                        print!("> Checking '{table}' table : ");
+                        if table
+                            .exists(&pool)
                             .await
-                            .context("While creating table existence")?
+                            .context("While checking table existence")?
                         {
                             println!("OK");
                         } else {
                             println!("Not Exists");
 
                             if fix {
-                                print!(">> Trying to create table '{t}': ");
-                                match pool.execute(query(t.create())).await {
+                                print!(">> Trying to create table '{table}' : ");
+                                match pool.execute(query(table.create())).await {
                                     Ok(_) => println!("OK\n"),
                                     Err(err) => {
                                         println!("Failed\n>>\t{err}\n");
@@ -152,6 +198,57 @@ pub async fn app(opt: Opt) -> Result<()> {
                             }
                         }
                     }
+                    println!("- Done\n");
+
+                    println!("\n- Checking function");
+                    for function in Function::ALL {
+                        print!("> Checking '{function}' function : ");
+                        if function
+                            .exists(&pool)
+                            .await
+                            .context("While checking function existence")?
+                        {
+                            println!("OK");
+                        } else {
+                            println!("Not Exists");
+
+                            if fix {
+                                print!(">> Trying to create function '{function}' : ");
+                                match pool.execute(query(function.create())).await {
+                                    Ok(_) => println!("OK\n"),
+                                    Err(err) => {
+                                        println!("Failed\n>>\t{err}\n");
+                                    }
+                                };
+                            }
+                        }
+                    }
+                    println!("- Done\n");
+
+                    println!("\n- Checking procedures");
+                    for procedure in Procedure::ALL {
+                        print!("> Checking '{procedure}' procedure : ");
+                        if procedure
+                            .exists(&pool)
+                            .await
+                            .context("While checking procedure existence")?
+                        {
+                            println!("OK");
+                        } else {
+                            println!("Not Exists");
+
+                            if fix {
+                                print!(">> Trying to create procedure '{procedure}' : ");
+                                match pool.execute(query(procedure.create())).await {
+                                    Ok(_) => println!("OK\n"),
+                                    Err(err) => {
+                                        println!("Failed\n>>\t{err}\n");
+                                    }
+                                };
+                            }
+                        }
+                    }
+                    println!("- Done\n");
                 }
                 Database::Truncate => {
                     println!("\n!!! Truncating database !!!\n");
@@ -199,167 +296,100 @@ pub async fn app(opt: Opt) -> Result<()> {
                 Generate::Push { uri } => {
                     let pool = Arc::new(open_pool(uri, &opt.pool_opts).await?);
 
-                    // Low-level tables
+                    fn mapper<T>(obj: T) -> Box<dyn Insertable + Send + Sync>
+                    where
+                        T: Insertable + Send + Sync + 'static,
                     {
-                        println!("Inserting low-level tables data");
-                        let mut tasks: Vec<BoxFuture<Result<PgQueryResult, Error>>> =
-                            Vec::with_capacity(
-                                component_kind.len()
-                                    + service.len()
-                                    + position.len()
-                                    + manufacturer.len()
-                                    + person.len()
-                                    + supplier.len(),
-                            );
-
-                        component_kind.drain(..).for_each(|c| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { c.insert(&pool).await }))
-                        });
-                        service.drain(..).for_each(|s| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { s.insert(&pool).await }))
-                        });
-                        position.drain(..).for_each(|p| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { p.insert(&pool).await }))
-                        });
-                        manufacturer.drain(..).for_each(|m| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { m.insert(&pool).await }))
-                        });
-                        person.drain(..).for_each(|p| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { p.insert(&pool).await }))
-                        });
-                        supplier.drain(..).for_each(|s| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { s.insert(&pool).await }))
-                        });
-
-                        try_join_all(tasks).await?;
+                        Box::new(obj)
                     }
 
-                    // First group tables (Sync groups)
-                    {
-                        println!("Inserting first group tables data");
-                        let mut tasks: Vec<BoxFuture<Result<PgQueryResult, Error>>> =
-                            Vec::with_capacity(labor_contract.len() + phone_model.len());
+                    async fn insert_group(
+                        pool: &Arc<PgPool>,
+                        name: &str,
+                        objects: impl Iterator<Item = Box<dyn Insertable + Send + Sync>>,
+                    ) -> Result<(), Error> {
+                        print!("Inserting {name} : ");
 
-                        labor_contract.drain(..).for_each(|lc| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { lc.insert(&pool).await }))
-                        });
-                        phone_model.drain(..).for_each(|pm| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { pm.insert(&pool).await }))
-                        });
-                        try_join_all(tasks).await?;
+                        try_join_all(objects.map(|obj| {
+                            let pool = Arc::clone(pool);
+                            Box::pin(async move { obj.insert().execute(&*pool).await })
+                        }))
+                        .await?;
+
+                        println!("Done");
+
+                        Ok(())
                     }
 
-                    // Second group tables
-                    {
-                        println!("Inserting second group tables data");
-                        let mut tasks: Vec<BoxFuture<Result<PgQueryResult, Error>>> =
-                            Vec::with_capacity(staff.len() + component.len() + phone.len());
+                    insert_group(
+                        &pool,
+                        "low-level",
+                        component_kind
+                            .drain(..)
+                            .map(mapper)
+                            .chain(service.drain(..).map(mapper))
+                            .chain(position.drain(..).map(mapper))
+                            .chain(manufacturer.drain(..).map(mapper))
+                            .chain(person.drain(..).map(mapper))
+                            .chain(supplier.drain(..).map(mapper)),
+                    )
+                    .await?;
 
-                        staff.drain(..).for_each(|s| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { s.insert(&pool).await }))
-                        });
-                        component.drain(..).for_each(|c| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { c.insert(&pool).await }))
-                        });
-                        phone.drain(..).for_each(|p| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { p.insert(&pool).await }))
-                        });
-                        try_join_all(tasks).await?;
-                    }
+                    insert_group(
+                        &pool,
+                        "first",
+                        labor_contract
+                            .drain(..)
+                            .map(mapper)
+                            .chain(phone_model.drain(..).map(mapper)),
+                    )
+                    .await?;
 
-                    // Third group tables
-                    {
-                        println!("Inserting third group tables data");
-                        let mut tasks: Vec<BoxFuture<Result<PgQueryResult, Error>>> =
-                            Vec::with_capacity(account.len());
+                    insert_group(
+                        &pool,
+                        "second",
+                        staff
+                            .drain(..)
+                            .map(mapper)
+                            .chain(component.drain(..).map(mapper))
+                            .chain(phone.drain(..).map(mapper)),
+                    )
+                    .await?;
 
-                        account.drain(..).for_each(|a| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { a.insert(&pool).await }))
-                        });
-                        try_join_all(tasks).await?;
-                    }
+                    insert_group(&pool, "third", account.drain(..).map(mapper)).await?;
 
-                    // Fourth group tables
-                    {
-                        println!("Inserting fourth group tables data");
-                        let mut tasks: Vec<BoxFuture<Result<PgQueryResult, Error>>> =
-                            Vec::with_capacity(order.len() + supply_contract.len());
+                    insert_group(
+                        &pool,
+                        "fourth",
+                        order
+                            .drain(..)
+                            .map(mapper)
+                            .chain(supply_contract.drain(..).map(mapper)),
+                    )
+                    .await?;
 
-                        order.drain(..).for_each(|o| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { o.insert(&pool).await }))
-                        });
-                        supply_contract.drain(..).for_each(|s_p| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { s_p.insert(&pool).await }))
-                        });
-                        try_join_all(tasks).await?;
-                    }
+                    insert_group(
+                        &pool,
+                        "fifth",
+                        supply
+                            .drain(..)
+                            .map(mapper)
+                            .chain(service_phone_model.drain(..).map(mapper))
+                            .chain(warehouse.drain(..).map(mapper)),
+                    )
+                    .await?;
 
-                    // Fifth group tables
-                    {
-                        println!("Inserting fifth group tables data");
-                        let mut tasks: Vec<BoxFuture<Result<PgQueryResult, Error>>> =
-                            Vec::with_capacity(
-                                supply.len() + service_phone_model.len() + warehouse.len(),
-                            );
+                    insert_group(
+                        &pool,
+                        "sixth",
+                        order_service
+                            .drain(..)
+                            .map(mapper)
+                            .chain(warehouse_supply.drain(..).map(mapper)),
+                    )
+                    .await?;
 
-                        supply.drain(..).for_each(|s| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { s.insert(&pool).await }))
-                        });
-                        service_phone_model.drain(..).for_each(|s_pm| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { s_pm.insert(&pool).await }))
-                        });
-                        warehouse.drain(..).for_each(|w| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { w.insert(&pool).await }))
-                        });
-                        try_join_all(tasks).await?;
-                    }
-
-                    // Sixth group tables
-                    {
-                        println!("Inserting sixth group tables data");
-                        let mut tasks: Vec<BoxFuture<Result<PgQueryResult, Error>>> =
-                            Vec::with_capacity(order_service.len() + warehouse_supply.len());
-
-                        order_service.drain(..).for_each(|o_s| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { o_s.insert(&pool).await }))
-                        });
-                        warehouse_supply.drain(..).for_each(|w_s| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { w_s.insert(&pool).await }))
-                        });
-                        try_join_all(tasks).await?;
-                    }
-
-                    // Seventh group tables
-                    {
-                        println!("Inserting seventh group tables data");
-                        let mut tasks: Vec<BoxFuture<Result<PgQueryResult, Error>>> =
-                            Vec::with_capacity(order_warehouse.len());
-
-                        order_warehouse.drain(..).for_each(|o_w| {
-                            let pool = Arc::clone(&pool);
-                            tasks.push(Box::pin(async move { o_w.insert(&pool).await }))
-                        });
-                        try_join_all(tasks).await?;
-                    }
+                    insert_group(&pool, "seventh", order_warehouse.drain(..).map(mapper)).await?;
                 }
                 Generate::Dump { path } => {
                     let mut file = File::options()

@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, types::Uuid, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, types::Uuid, Postgres};
 
-use crate::types::{account_role::AccountRole, account_status::AccountStatus, metatime::MetaTime};
+use crate::{
+    traits::Insertable,
+    types::{account_role::AccountRole, account_status::AccountStatus, metatime::MetaTime},
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Account {
@@ -67,8 +70,10 @@ impl Account {
             MetaTime::default(),
         )
     }
+}
 
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+impl Insertable for Account {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(
             r#"INSERT INTO "Account" (uuid, staff, login, password, role, status) 
 VALUES ($1, $2, $3, $4, $5, $6);"#,
@@ -79,7 +84,5 @@ VALUES ($1, $2, $3, $4, $5, $6);"#,
         .bind(self.password.clone())
         .bind(self.role)
         .bind(self.status)
-        .execute(pool)
-        .await
     }
 }

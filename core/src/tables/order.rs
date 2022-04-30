@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
 use uuid::Uuid;
 
-use crate::types::{metatime::MetaTime, order_status::OrderStatus};
+use crate::{
+    traits::Insertable,
+    types::{metatime::MetaTime, order_status::OrderStatus},
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Order {
@@ -71,8 +74,9 @@ impl Order {
             MetaTime::default(),
         )
     }
-
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+}
+impl Insertable for Order {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(
             r#"INSERT INTO "Order" (uuid, client, phone, serviceman, shopman, status) 
 VALUES ($1, $2, $3, $4, $5, $6);
@@ -84,7 +88,5 @@ VALUES ($1, $2, $3, $4, $5, $6);
         .bind(self.serviceman)
         .bind(self.shopman)
         .bind(self.status)
-        .execute(pool)
-        .await
     }
 }

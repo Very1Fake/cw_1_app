@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
 use uuid::Uuid;
+
+use crate::traits::Insertable;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Supplier {
@@ -55,8 +57,10 @@ impl Supplier {
     ) -> Self {
         Self::new(Uuid::new_v4(), name, iban, swift, address, country)
     }
+}
 
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+impl Insertable for Supplier {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(
             r#"INSERT INTO "Supplier" (uuid, name, iban, swift, address, country) 
 VALUES ($1, $2, $3, $4, $5, $6);"#,
@@ -67,7 +71,5 @@ VALUES ($1, $2, $3, $4, $5, $6);"#,
         .bind(self.swift.clone())
         .bind(self.address.clone())
         .bind(self.country.clone())
-        .execute(pool)
-        .await
     }
 }

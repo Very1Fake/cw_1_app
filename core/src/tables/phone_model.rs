@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
 use uuid::Uuid;
+
+use crate::traits::Insertable;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PhoneModel {
@@ -49,8 +51,10 @@ impl PhoneModel {
     pub fn new_auto(name: String, description: Option<String>, manufacturer: Uuid) -> Self {
         Self::new(Uuid::new_v4(), name, description, manufacturer)
     }
+}
 
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+impl Insertable for PhoneModel {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(
             r#"INSERT INTO "PhoneModel" (uuid, name, description, manufacturer) 
     VALUES ($1, $2, $3, $4);"#,
@@ -59,7 +63,5 @@ impl PhoneModel {
         .bind(self.name.clone())
         .bind(self.description.clone())
         .bind(self.manufacturer)
-        .execute(pool)
-        .await
     }
 }

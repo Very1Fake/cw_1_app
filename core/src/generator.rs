@@ -553,6 +553,11 @@ impl Config {
                 }
             })
             .collect::<Vec<_>>();
+
+        if workers.is_empty() {
+            panic!("There is no warehouse workers on staff");
+        }
+
         let old_statuses = Slice::new(&[
             SupplyStatus::Delivered,
             SupplyStatus::Failed,

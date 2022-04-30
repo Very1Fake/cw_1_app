@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, types::BigDecimal, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, types::BigDecimal, Postgres};
 use uuid::Uuid;
 
-use crate::types::{metatime::MetaTime, AccountRole};
+use crate::{
+    traits::Insertable,
+    types::{metatime::MetaTime, AccountRole},
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Position {
@@ -66,14 +69,14 @@ impl Position {
     pub fn new_auto(name: String, details: Option<String>, salary: BigDecimal) -> Self {
         Self::new(Uuid::new_v4(), name, details, salary, MetaTime::default())
     }
+}
 
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+impl Insertable for Position {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(r#"INSERT INTO "Position" (uuid, name, details, salary) VALUES ($1, $2, $3, $4);"#)
             .bind(self.uuid)
             .bind(self.name.clone())
             .bind(self.details.clone())
             .bind(self.salary.clone())
-            .execute(pool)
-            .await
     }
 }

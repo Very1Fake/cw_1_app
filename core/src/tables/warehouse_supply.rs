@@ -1,7 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
 use uuid::Uuid;
+
+use crate::traits::Insertable;
 
 /// Represents relation table between [`Warehouse`](`super::warehouse::Warehouse`) and [`Supply`](`super::supply::Supply`)
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,14 +37,13 @@ impl WarehouseSupply {
             created,
         }
     }
-
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+}
+impl Insertable for WarehouseSupply {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(r#"INSERT INTO "WarehouseSupply" VALUES ($1, $2, $3, $4);"#)
             .bind(self.item)
             .bind(self.supply)
             .bind(self.amount)
             .bind(self.created)
-            .execute(pool)
-            .await
     }
 }

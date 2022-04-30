@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, types::BigDecimal, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, types::BigDecimal, Postgres};
 use uuid::Uuid;
+
+use crate::traits::Insertable;
 
 /// Represents relation table between [`Order`](`super::order::Order`) and [`Service`](`super::service::Service`)
 #[derive(Serialize, Deserialize, Debug)]
@@ -30,13 +32,13 @@ impl OrderService {
             price,
         }
     }
+}
 
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+impl Insertable for OrderService {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(r#"INSERT INTO "OrderService" VALUES ($1, $2, $3);"#)
             .bind(self.order)
             .bind(self.service)
             .bind(self.price.clone())
-            .execute(pool)
-            .await
     }
 }

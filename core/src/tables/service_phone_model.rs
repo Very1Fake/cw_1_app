@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, types::BigDecimal, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, types::BigDecimal, Postgres};
 use uuid::Uuid;
 
-use crate::types::MetaTime;
+use crate::{traits::Insertable, types::MetaTime};
 
 /// Represents relation table between [`Service`](`super::service::Service`) and [`PhoneModel`](`super::phone_model::PhoneModel`)
 #[derive(Serialize, Deserialize, Debug)]
@@ -41,13 +41,12 @@ impl ServicePhoneModel {
     pub fn new_auto(service: Uuid, phone_model: Uuid, price: BigDecimal) -> Self {
         Self::new(service, phone_model, price, MetaTime::default())
     }
-
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+}
+impl Insertable for ServicePhoneModel {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(r#"INSERT INTO "ServicePhoneModel" VALUES ($1, $2, $3);"#)
             .bind(self.service)
             .bind(self.phone_model)
             .bind(self.price.clone())
-            .execute(pool)
-            .await
     }
 }

@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
 use uuid::Uuid;
 
-use crate::types::staff_status::StaffStatus;
+use crate::{traits::Insertable, types::staff_status::StaffStatus};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Staff {
@@ -38,8 +38,10 @@ impl Staff {
     pub fn new_auto(contract: Uuid, position: Uuid, status: StaffStatus) -> Self {
         Self::new(Uuid::new_v4(), contract, position, status)
     }
+}
 
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+impl Insertable for Staff {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(
             r#"INSERT INTO "Staff" (uuid, contract, position, status) 
     VALUES ($1, $2, $3, $4);"#,
@@ -48,7 +50,5 @@ impl Staff {
         .bind(self.contract)
         .bind(self.position)
         .bind(self.status)
-        .execute(pool)
-        .await
     }
 }

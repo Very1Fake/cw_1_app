@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
 use uuid::Uuid;
+
+use crate::traits::Insertable;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Manufacturer {
@@ -38,13 +40,12 @@ impl Manufacturer {
     pub fn new_auto(name: String, country: String) -> Self {
         Self::new(Uuid::new_v4(), name, country)
     }
-
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+}
+impl Insertable for Manufacturer {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(r#"INSERT INTO "Manufacturer" (uuid, name, country) VALUES ($1, $2, $3);"#)
             .bind(self.uuid)
             .bind(self.name.clone())
             .bind(self.country.clone())
-            .execute(pool)
-            .await
     }
 }

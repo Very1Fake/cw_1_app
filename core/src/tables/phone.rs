@@ -1,9 +1,12 @@
 use mac_address::MacAddress;
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
 use uuid::Uuid;
 
-use crate::types::{color::Color, metatime::MetaTime};
+use crate::{
+    traits::Insertable,
+    types::{color::Color, metatime::MetaTime},
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Phone {
@@ -76,8 +79,9 @@ impl Phone {
             MetaTime::default(),
         )
     }
-
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+}
+impl Insertable for Phone {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(
             r#"INSERT INTO "Phone" (uuid, person, imei, wifi, bluetooth, model, color) 
 VALUES ($1, $2, $3, $4, $5, $6, $7);"#,
@@ -89,7 +93,5 @@ VALUES ($1, $2, $3, $4, $5, $6, $7);"#,
         .bind(self.bluetooth)
         .bind(self.model)
         .bind(self.color)
-        .execute(pool)
-        .await
     }
 }

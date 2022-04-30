@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
 use uuid::Uuid;
 
-use crate::types::metatime::MetaTime;
+use crate::{traits::Insertable, types::metatime::MetaTime};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Person {
@@ -67,8 +67,10 @@ impl Person {
             MetaTime::default(),
         )
     }
+}
 
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+impl Insertable for Person {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(
             r#"INSERT INTO "Person"
 (uuid, first_name, middle_name, last_name, email, phone) 
@@ -80,7 +82,5 @@ VALUES ($1, $2, $3, $4, $5, $6);"#,
         .bind(self.last_name.clone())
         .bind(self.email.clone())
         .bind(self.phone.clone())
-        .execute(pool)
-        .await
     }
 }

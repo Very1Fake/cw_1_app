@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
 use uuid::Uuid;
 
-use crate::types::metatime::MetaTime;
+use crate::{traits::Insertable, types::metatime::MetaTime};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Service {
@@ -64,8 +64,10 @@ impl Service {
     pub fn new_auto(name: String, description: Option<String>) -> Self {
         Self::new(Uuid::new_v4(), name, description, MetaTime::default())
     }
+}
 
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+impl Insertable for Service {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(
             r#"INSERT INTO "Service" (uuid, name, description)
     VALUES ($1, $2, $3);"#,
@@ -73,7 +75,5 @@ impl Service {
         .bind(self.uuid)
         .bind(self.name.clone())
         .bind(self.description.clone())
-        .execute(pool)
-        .await
     }
 }

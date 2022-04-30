@@ -1,9 +1,12 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
 use uuid::Uuid;
 
-use crate::types::{metatime::MetaTime, supply_status::SupplyStatus};
+use crate::{
+    traits::Insertable,
+    types::{metatime::MetaTime, supply_status::SupplyStatus},
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Supply {
@@ -64,8 +67,10 @@ impl Supply {
             MetaTime::default(),
         )
     }
+}
 
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+impl Insertable for Supply {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(
             r#"INSERT INTO "Supply" (uuid, contract, staff, status, signed)
 VALUES ($1, $2, $3, $4, $5);"#,
@@ -75,7 +80,5 @@ VALUES ($1, $2, $3, $4, $5);"#,
         .bind(self.staff)
         .bind(self.status)
         .bind(self.signed)
-        .execute(pool)
-        .await
     }
 }

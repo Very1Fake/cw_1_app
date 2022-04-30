@@ -5,9 +5,6 @@ use sqlx::{postgres::PgDatabaseError, query, query_as, Error, PgPool, Postgres};
 
 pub use uuid_ossp::UuidOssp;
 
-pub const CREATE_ALL: [(&str, &str); 1] = [(UuidOssp::CREATE, UuidOssp::NAME)];
-pub const DROP_ALL: [(&str, &str); 1] = [(UuidOssp::DROP, UuidOssp::NAME)];
-
 #[derive(Clone, Copy, Debug)]
 pub enum Extension {
     UuidOssp,

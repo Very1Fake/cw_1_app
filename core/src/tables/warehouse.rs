@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgQueryResult, query, types::BigDecimal, Error, PgPool};
+use sqlx::{postgres::PgArguments, query, query::Query, types::BigDecimal, Postgres};
 use uuid::Uuid;
 
-use crate::types::MetaTime;
+use crate::{traits::Insertable, types::MetaTime};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Warehouse {
@@ -59,8 +59,10 @@ impl Warehouse {
             MetaTime::default(),
         )
     }
+}
 
-    pub async fn insert(&self, pool: &PgPool) -> Result<PgQueryResult, Error> {
+impl Insertable for Warehouse {
+    fn insert(&self) -> Query<'static, Postgres, PgArguments> {
         query(
             r#"INSERT INTO "Warehouse" (uuid, component, supplier, price, amount)
 VALUES ($1, $2, $3, $4, $5);"#,
@@ -70,7 +72,5 @@ VALUES ($1, $2, $3, $4, $5);"#,
         .bind(self.supplier)
         .bind(self.price.clone())
         .bind(self.amount)
-        .execute(pool)
-        .await
     }
 }
