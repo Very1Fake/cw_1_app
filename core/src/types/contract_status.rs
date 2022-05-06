@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::traits::Recreatable;
+
 #[derive(Serialize, Deserialize, sqlx::Type, Clone, Copy, Debug)]
 #[sqlx(type_name = "ContractStatus", rename_all = "PascalCase")]
 pub enum ContractStatus {
@@ -21,19 +23,6 @@ impl ContractStatus {
         Self::Rejected,
     ];
 
-    pub const NAME: &'static str = "ContractStatus";
-
-    pub const CREATE: &'static str = r#"CREATE TYPE "ContractStatus" AS ENUM(
-    'Review',
-    'Negotiation',
-    'Active',
-    'Expired',
-    'Void',
-    'Rejected'
-);"#;
-
-    pub const DROP: &'static str = r#"DROP TYPE "ContractStatus";"#;
-
     pub fn as_str(&self) -> &str {
         use ContractStatus::*;
 
@@ -46,4 +35,19 @@ impl ContractStatus {
             Rejected => "Rejected",
         }
     }
+}
+
+impl Recreatable for ContractStatus {
+    const NAME: &'static str = "ContractStatus";
+
+    const CREATE: &'static str = r#"CREATE TYPE "ContractStatus" AS ENUM(
+    'Review',
+    'Negotiation',
+    'Active',
+    'Expired',
+    'Void',
+    'Rejected'
+);"#;
+
+    const DROP: &'static str = r#"DROP TYPE "ContractStatus";"#;
 }

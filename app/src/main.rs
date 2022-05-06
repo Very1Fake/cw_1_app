@@ -7,7 +7,11 @@ mod model;
 
 #[tokio::main]
 async fn main() {
-    run_native(Box::new(App::new()), NativeOptions::default())
+    run_native(
+        "CW App",
+        NativeOptions::default(),
+        Box::new(|cc| Box::new(App::new(cc))),
+    )
 }
 
 // TODO: Role-based main screen prototype

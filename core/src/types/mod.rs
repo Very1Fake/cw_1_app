@@ -21,6 +21,8 @@ pub use order_status::OrderStatus;
 pub use staff_status::StaffStatus;
 pub use supply_status::SupplyStatus;
 
+use crate::traits::Recreatable;
+
 #[derive(Clone, Copy, Debug)]
 pub enum DbType {
     AccountRole,
@@ -47,14 +49,14 @@ impl DbType {
 
     pub fn name(&self) -> &str {
         match self {
-            DbType::AccountRole => AccountRole::NAME,
-            DbType::AccountStatus => AccountStatus::NAME,
-            DbType::Color => Color::NAME,
-            DbType::ContractStatus => ContractStatus::NAME,
-            DbType::MetaTime => MetaTime::NAME,
-            DbType::OrderStatus => OrderStatus::NAME,
-            DbType::StaffStatus => StaffStatus::NAME,
-            DbType::SupplyStatus => SupplyStatus::NAME,
+            Self::AccountRole => AccountRole::NAME,
+            Self::AccountStatus => AccountStatus::NAME,
+            Self::Color => Color::NAME,
+            Self::ContractStatus => ContractStatus::NAME,
+            Self::MetaTime => MetaTime::NAME,
+            Self::OrderStatus => OrderStatus::NAME,
+            Self::StaffStatus => StaffStatus::NAME,
+            Self::SupplyStatus => SupplyStatus::NAME,
         }
     }
 
@@ -79,27 +81,27 @@ impl DbType {
 
     pub fn create(&self) -> &str {
         match self {
-            DbType::AccountRole => AccountRole::CREATE,
-            DbType::AccountStatus => AccountStatus::CREATE,
-            DbType::Color => Color::CREATE,
-            DbType::ContractStatus => ContractStatus::CREATE,
-            DbType::MetaTime => MetaTime::CREATE,
-            DbType::OrderStatus => OrderStatus::CREATE,
-            DbType::StaffStatus => StaffStatus::CREATE,
-            DbType::SupplyStatus => SupplyStatus::CREATE,
+            Self::AccountRole => AccountRole::CREATE,
+            Self::AccountStatus => AccountStatus::CREATE,
+            Self::Color => Color::CREATE,
+            Self::ContractStatus => ContractStatus::CREATE,
+            Self::MetaTime => MetaTime::CREATE,
+            Self::OrderStatus => OrderStatus::CREATE,
+            Self::StaffStatus => StaffStatus::CREATE,
+            Self::SupplyStatus => SupplyStatus::CREATE,
         }
     }
 
     pub fn drop(&self) -> &str {
         match self {
-            DbType::AccountRole => AccountRole::DROP,
-            DbType::AccountStatus => AccountStatus::DROP,
-            DbType::Color => Color::DROP,
-            DbType::ContractStatus => ContractStatus::DROP,
-            DbType::MetaTime => MetaTime::DROP,
-            DbType::OrderStatus => OrderStatus::DROP,
-            DbType::StaffStatus => StaffStatus::DROP,
-            DbType::SupplyStatus => SupplyStatus::DROP,
+            Self::AccountRole => AccountRole::DROP,
+            Self::AccountStatus => AccountStatus::DROP,
+            Self::Color => Color::DROP,
+            Self::ContractStatus => ContractStatus::DROP,
+            Self::MetaTime => MetaTime::DROP,
+            Self::OrderStatus => OrderStatus::DROP,
+            Self::StaffStatus => StaffStatus::DROP,
+            Self::SupplyStatus => SupplyStatus::DROP,
         }
     }
 

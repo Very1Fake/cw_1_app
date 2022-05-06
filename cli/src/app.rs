@@ -14,7 +14,9 @@ use cw_core::{
     },
     tables::Table,
     traits::Insertable,
+    triggers::Trigger,
     types::DbType,
+    views::View,
 };
 use futures::future::try_join_all;
 use serde_json::{json, to_string};
@@ -55,6 +57,16 @@ pub async fn app(opt: Opt) -> Result<()> {
                     })
                     .await?;
                     println!("- Done\n");
+                    println!("\n- Creating views");
+                    View::create_all(&pool, |(view, result)| {
+                        match &result {
+                            Ok(_) => println!("> View '{view}' has been created"),
+                            Err(_) => (),
+                        };
+                        result
+                    })
+                    .await?;
+                    println!("- Done\n");
                     println!("\n- Creating functions");
                     Function::create_all(&pool, |(function, result)| {
                         match &result {
@@ -75,22 +87,35 @@ pub async fn app(opt: Opt) -> Result<()> {
                     })
                     .await?;
                     println!("- Done\n");
+                    println!("\n- Creating triggers");
+                    Trigger::create_all(&pool, |(trigger, table, result)| {
+                        match &result {
+                            Ok(_) => println!(
+                                ">> Trigger '{trigger}' for '{table}' table has been created"
+                            ),
+                            Err(_) => (),
+                        };
+                        result
+                    })
+                    .await?;
+                    println!("- Done\n");
                 }
                 Database::Drop => {
-                    print!("\n- Dropping procedures");
-                    Procedure::drop_all(&pool, |(procedure, result)| {
+                    print!("\n- Dropping triggers\n");
+                    Trigger::drop_all(&pool, |(trigger, table, result)| {
                         match &result {
-                            Ok(_) => println!("> Procedure '{procedure}' has been dropped"),
+                            Ok(_) => println!(
+                                ">> Trigger '{trigger}' for '{table}' table has been dropped"
+                            ),
                             Err(_) => (),
                         }
                         result
                     })
                     .await?;
-                    println!("- Done\n");
-                    println!("\n- Dropping tables");
-                    Table::drop_all(&pool, |(table, result)| {
+                    print!("\n- Dropping procedures\n");
+                    Procedure::drop_all(&pool, |(procedure, result)| {
                         match &result {
-                            Ok(_) => println!("> Table '{table}' has been dropped"),
+                            Ok(_) => println!("> Procedure '{procedure}' has been dropped"),
                             Err(_) => (),
                         }
                         result
@@ -101,6 +126,26 @@ pub async fn app(opt: Opt) -> Result<()> {
                     Function::drop_all(&pool, |(function, result)| {
                         match &result {
                             Ok(_) => println!("> Function '{function}' has been dropped"),
+                            Err(_) => (),
+                        }
+                        result
+                    })
+                    .await?;
+                    println!("- Done\n");
+                    println!("\n- Dropping views");
+                    View::drop_all(&pool, |(view, result)| {
+                        match &result {
+                            Ok(_) => println!("> View '{view}' has been dropped"),
+                            Err(_) => (),
+                        }
+                        result
+                    })
+                    .await?;
+                    println!("- Done\n");
+                    println!("\n- Dropping tables");
+                    Table::drop_all(&pool, |(table, result)| {
+                        match &result {
+                            Ok(_) => println!("> Table '{table}' has been dropped"),
                             Err(_) => (),
                         }
                         result
@@ -200,6 +245,31 @@ pub async fn app(opt: Opt) -> Result<()> {
                     }
                     println!("- Done\n");
 
+                    println!("\n- Checking view");
+                    for view in View::ALL {
+                        print!("> Checking '{view}' view : ");
+                        if view
+                            .exists(&pool)
+                            .await
+                            .context("While checking view existence")?
+                        {
+                            println!("OK");
+                        } else {
+                            println!("Not Exists");
+
+                            if fix {
+                                print!(">> Trying to create view '{view}' : ");
+                                match pool.execute(query(view.create())).await {
+                                    Ok(_) => println!("OK\n"),
+                                    Err(err) => {
+                                        println!("Failed\n>>\t{err}\n");
+                                    }
+                                };
+                            }
+                        }
+                    }
+                    println!("- Done\n");
+
                     println!("\n- Checking function");
                     for function in Function::ALL {
                         print!("> Checking '{function}' function : ");
@@ -245,6 +315,36 @@ pub async fn app(opt: Opt) -> Result<()> {
                                         println!("Failed\n>>\t{err}\n");
                                     }
                                 };
+                            }
+                        }
+                    }
+                    println!("- Done\n");
+
+                    println!("\n- Checking triggers");
+                    for trigger in Trigger::ALL {
+                        println!("> Checking '{trigger}' trigger:");
+                        for (table, result) in trigger.exists(&pool).await {
+                            print!(">> Checking for '{table}' table : ");
+                            match result {
+                                Ok(ok) => {
+                                    if ok {
+                                        println!("OK");
+                                    } else {
+                                        println!("Not Exists");
+
+                                        if fix {
+                                            print!(">>> Trying to create trigger for '{table}' table : ");
+                                            match query(&trigger.create(table)).execute(&pool).await
+                                            {
+                                                Ok(_) => println!("OK\n"),
+                                                Err(err) => {
+                                                    println!("Failed\n>>>\t{err}\n");
+                                                }
+                                            };
+                                        }
+                                    }
+                                }
+                                Err(_) => todo!(),
                             }
                         }
                     }
@@ -434,6 +534,12 @@ async fn open_pool(uri: DatabaseUri, opts: &PoolOpts) -> Result<PgPool, Error> {
     let pool = PoolOptions::new()
         .min_connections(opts.min_conns)
         .max_connections(opts.max_conns)
+        // .after_connect(|conn: &mut PgConnection| {
+        //     Box::pin(async move {
+        //         conn.execute("SET user = 'cli-tool';").await?;
+        //         Ok(())
+        //     })
+        // })
         .connect_with(
             options
                 .application_name("CW-CLI")

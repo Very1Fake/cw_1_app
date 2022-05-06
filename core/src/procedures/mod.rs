@@ -1,9 +1,11 @@
-pub mod index_prices;
-
 use core::fmt;
 
 use anyhow::{Context, Result};
 use sqlx::{postgres::PgQueryResult, query, query_as, Error, PgPool, Postgres};
+
+use crate::traits::Recreatable;
+
+pub mod index_prices;
 
 pub use index_prices::IndexPrices;
 
@@ -17,7 +19,19 @@ impl Procedure {
 
     pub fn name(&self) -> &str {
         match self {
-            Procedure::IndexPrices => IndexPrices::NAME,
+            Self::IndexPrices => IndexPrices::NAME,
+        }
+    }
+
+    pub fn create(&self) -> &str {
+        match self {
+            Self::IndexPrices => IndexPrices::CREATE,
+        }
+    }
+
+    pub fn drop(&self) -> &str {
+        match self {
+            Self::IndexPrices => IndexPrices::DROP,
         }
     }
 
@@ -41,18 +55,6 @@ WHERE proname = $1
                     Err(err)
                 }
             }
-        }
-    }
-
-    pub fn create(&self) -> &str {
-        match self {
-            Procedure::IndexPrices => IndexPrices::CREATE,
-        }
-    }
-
-    pub fn drop(&self) -> &str {
-        match self {
-            Procedure::IndexPrices => IndexPrices::DROP,
         }
     }
 

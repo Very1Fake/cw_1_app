@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::traits::Recreatable;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MetaTime {
     pub updated: DateTime<Utc>,
@@ -8,16 +10,18 @@ pub struct MetaTime {
 }
 
 impl MetaTime {
-    pub const NAME: &'static str = "metatime";
-
-    pub const CREATE: &'static str =
-        "CREATE TYPE metatime AS (updated timestamptz, created timestamptz);";
-
-    pub const DROP: &'static str = r#"DROP TYPE metatime;"#;
-
     pub fn now() -> DateTime<Utc> {
         Utc::now()
     }
+}
+
+impl Recreatable for MetaTime {
+    const NAME: &'static str = "metatime";
+
+    const CREATE: &'static str =
+        "CREATE TYPE metatime AS (updated timestamptz, created timestamptz);";
+
+    const DROP: &'static str = r#"DROP TYPE metatime;"#;
 }
 
 impl Default for MetaTime {

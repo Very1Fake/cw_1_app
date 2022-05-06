@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::traits::Recreatable;
+
 #[derive(Serialize, Deserialize, sqlx::Type, Clone, Copy, Debug)]
 #[sqlx(type_name = "color", rename_all = "PascalCase")]
 pub enum Color {
@@ -46,10 +48,12 @@ impl Color {
         Self::LightBlue,
         Self::Gold,
     ];
+}
 
-    pub const NAME: &'static str = "color";
+impl Recreatable for Color {
+    const NAME: &'static str = "color";
 
-    pub const CREATE: &'static str = "CREATE TYPE color AS ENUM (
+    const CREATE: &'static str = "CREATE TYPE color AS ENUM (
     'Black',
     'DarkGray',
     'Gray',
@@ -71,5 +75,5 @@ impl Color {
     'Gold'
 );";
 
-    pub const DROP: &'static str = "DROP TYPE color;";
+    const DROP: &'static str = "DROP TYPE color;";
 }

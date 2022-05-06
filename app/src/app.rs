@@ -5,7 +5,7 @@ use eframe::{
     },
     emath::Align2,
     epaint::Vec2,
-    epi::{App as EApp, Frame, Storage},
+    App as EApp, CreationContext, Frame,
 };
 
 pub struct App {
@@ -20,7 +20,9 @@ impl App {
     /// 2. If first step fails then setup window will appear.
     ///    If remember were checked then user will skip auth step.
     ///    Else user will need to go through auth step.
-    pub fn new() -> Self {
+    pub fn new(cc: &CreationContext<'_>) -> Self {
+        cc.egui_ctx.set_visuals(Visuals::dark());
+
         // TODO: Profile session
         Self {
             state: AppScreen::setup(),
@@ -29,7 +31,7 @@ impl App {
 }
 
 impl EApp for App {
-    fn update(&mut self, ctx: &Context, _frame: &Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         let mut state = None;
 
         TopBottomPanel::top("top_bar").show(ctx, |ui| {
@@ -149,14 +151,6 @@ impl EApp for App {
         if let Some(new) = state {
             self.state = new;
         }
-    }
-
-    fn name(&self) -> &str {
-        "CW App"
-    }
-
-    fn setup(&mut self, ctx: &Context, _frame: &Frame, _storage: Option<&dyn Storage>) {
-        ctx.set_visuals(Visuals::dark());
     }
 }
 

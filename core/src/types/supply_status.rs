@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::traits::Recreatable;
+
 #[derive(Serialize, Deserialize, sqlx::Type, Clone, Copy, Debug)]
 #[sqlx(type_name = "SupplyStatus", rename_all = "PascalCase")]
 pub enum SupplyStatus {
@@ -24,10 +26,12 @@ impl SupplyStatus {
         Self::Failed,
         Self::Rejected,
     ];
+}
 
-    pub const NAME: &'static str = "SupplyStatus";
+impl Recreatable for SupplyStatus {
+    const NAME: &'static str = "SupplyStatus";
 
-    pub const CREATE: &'static str = r#"CREATE TYPE "SupplyStatus" AS ENUM (
+    const CREATE: &'static str = r#"CREATE TYPE "SupplyStatus" AS ENUM (
     'Review',
     'Negotiation',
     'Signed',
@@ -38,5 +42,5 @@ impl SupplyStatus {
     'Rejected'
 );"#;
 
-    pub const DROP: &'static str = r#"DROP TYPE "SupplyStatus";"#;
+    const DROP: &'static str = r#"DROP TYPE "SupplyStatus";"#;
 }

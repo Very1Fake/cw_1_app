@@ -10,6 +10,7 @@ pub mod generator;
 pub mod procedures;
 pub mod tables;
 pub mod traits;
+pub mod triggers;
 pub mod types;
 pub mod utils;
 pub mod views;

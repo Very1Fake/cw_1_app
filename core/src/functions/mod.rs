@@ -1,5 +1,3 @@
-pub mod update_time_func;
-
 use core::fmt;
 
 use anyhow::{Context, Result};
@@ -7,19 +5,49 @@ use sqlx::{postgres::PgQueryResult, query, query_as, Error, PgPool, Postgres};
 
 use crate::traits::Recreatable;
 
+pub mod audit_log_func;
+pub mod revenue_for_period;
+pub mod update_time_func;
+
+pub use audit_log_func::AuditLogFunc;
+pub use revenue_for_period::RevenueForPeriod;
 pub use update_time_func::UpdateTimeFunc;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Function {
     UpdateTimeFunc,
+    AuditLogFunc,
+    RevenueForPeriod,
 }
 
 impl Function {
-    pub const ALL: [Self; 1] = [Self::UpdateTimeFunc];
+    pub const ALL: [Self; 3] = [
+        Self::UpdateTimeFunc,
+        Self::AuditLogFunc,
+        Self::RevenueForPeriod,
+    ];
 
     pub fn name(&self) -> &str {
         match self {
-            Function::UpdateTimeFunc => UpdateTimeFunc::NAME,
+            Self::UpdateTimeFunc => UpdateTimeFunc::NAME,
+            Self::AuditLogFunc => AuditLogFunc::NAME,
+            Self::RevenueForPeriod => RevenueForPeriod::NAME,
+        }
+    }
+
+    pub fn create(&self) -> &str {
+        match self {
+            Self::UpdateTimeFunc => UpdateTimeFunc::CREATE,
+            Self::AuditLogFunc => AuditLogFunc::CREATE,
+            Self::RevenueForPeriod => RevenueForPeriod::CREATE,
+        }
+    }
+
+    pub fn drop(&self) -> &str {
+        match self {
+            Self::UpdateTimeFunc => UpdateTimeFunc::DROP,
+            Self::AuditLogFunc => AuditLogFunc::DROP,
+            Self::RevenueForPeriod => RevenueForPeriod::DROP,
         }
     }
 
@@ -28,7 +56,7 @@ impl Function {
             r#"SELECT true
 FROM pg_catalog.pg_proc
     JOIN pg_namespace ON pg_catalog.pg_proc.pronamespace = pg_namespace.oid
-WHERE proname = 'update_time_func'
+WHERE proname = $1
     AND nspname = 'public';"#,
         )
         .bind(self.name())
@@ -43,18 +71,6 @@ WHERE proname = 'update_time_func'
                     Err(err)
                 }
             }
-        }
-    }
-
-    pub fn create(&self) -> &str {
-        match self {
-            Function::UpdateTimeFunc => UpdateTimeFunc::CREATE,
-        }
-    }
-
-    pub fn drop(&self) -> &str {
-        match self {
-            Function::UpdateTimeFunc => UpdateTimeFunc::DROP,
         }
     }
 

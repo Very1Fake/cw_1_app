@@ -190,13 +190,10 @@ impl Table {
         }
     }
 
-    pub fn truncate_query(&self) -> String {
-        format!(r#"TRUNCATE "{}" RESTART IDENTITY cascade;"#, self.name())
-    }
-
     pub async fn exists(&self, pool: &PgPool) -> Result<bool, Error> {
         match query_as::<Postgres, (bool,)>(
-            "SELECT true FROM information_schema.tables WHERE table_name = $1",
+            r#"SELECT true FROM information_schema.tables
+WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name = $1"#,
         )
         .bind(self.name())
         .fetch_one(pool)
@@ -211,6 +208,10 @@ impl Table {
                 }
             }
         }
+    }
+
+    pub fn truncate_query(&self) -> String {
+        format!(r#"TRUNCATE "{}" RESTART IDENTITY cascade;"#, self.name())
     }
 
     /// Creates all application tables
