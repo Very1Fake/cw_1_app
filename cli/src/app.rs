@@ -21,14 +21,19 @@ use cw_core::{
 use futures::future::try_join_all;
 use serde_json::{json, to_string};
 
-use crate::opt::{Command, Database, DatabaseOpt, DatabaseUri, Generate, Opt, PoolOpts, SslMode};
+use crate::opt::{
+    Command, DatabaseAction, DatabaseOpt, DatabaseUri, Generate, Opt, PoolSize, SslMode,
+};
 
 pub async fn app(opt: Opt) -> Result<()> {
     match opt.command {
-        Command::Database(DatabaseOpt { db, command }) => {
-            let pool = open_pool(db, &opt.pool_opts).await?;
+        Command::Database(DatabaseOpt {
+            db,
+            action: command,
+        }) => {
+            let pool = open_pool(db, opt.pool_size).await?;
             match command {
-                Database::Create => {
+                DatabaseAction::Create => {
                     println!("\n- Loading extensions");
                     Extension::create_all(&pool, |(extension, p)| {
                         if p {
@@ -100,7 +105,7 @@ pub async fn app(opt: Opt) -> Result<()> {
                     .await?;
                     println!("- Done\n");
                 }
-                Database::Drop => {
+                DatabaseAction::Drop => {
                     print!("\n- Dropping triggers\n");
                     Trigger::drop_all(&pool, |(trigger, table, result)| {
                         match &result {
@@ -171,7 +176,7 @@ pub async fn app(opt: Opt) -> Result<()> {
                     .await?;
                     println!("- Done\n");
                 }
-                Database::Check { fix } => {
+                DatabaseAction::Check { fix } => {
                     println!("\n- Checking extensions");
                     for e in Extension::ALL {
                         print!("> Checking '{e}' extension : ");
@@ -350,7 +355,7 @@ pub async fn app(opt: Opt) -> Result<()> {
                     }
                     println!("- Done\n");
                 }
-                Database::Truncate => {
+                DatabaseAction::Truncate => {
                     println!("\n!!! Truncating database !!!\n");
 
                     Table::truncate(&pool, |(t, s)| {
@@ -394,7 +399,7 @@ pub async fn app(opt: Opt) -> Result<()> {
 
             match command {
                 Generate::Push { uri } => {
-                    let pool = Arc::new(open_pool(uri, &opt.pool_opts).await?);
+                    let pool = Arc::new(open_pool(uri, opt.pool_size).await?);
 
                     fn mapper<T>(obj: T) -> Box<dyn Insertable + Send + Sync>
                     where
@@ -527,13 +532,13 @@ pub async fn app(opt: Opt) -> Result<()> {
 }
 
 /// Creates connection pool to database
-async fn open_pool(uri: DatabaseUri, opts: &PoolOpts) -> Result<PgPool, Error> {
+async fn open_pool(uri: DatabaseUri, pool_size: PoolSize) -> Result<PgPool, Error> {
     let options: PgConnectOptions = uri.inner.as_str().parse()?;
 
     // Connecting to database
     let pool = PoolOptions::new()
-        .min_connections(opts.min_conns)
-        .max_connections(opts.max_conns)
+        .min_connections(pool_size.0)
+        .max_connections(pool_size.1)
         // .after_connect(|conn: &mut PgConnection| {
         //     Box::pin(async move {
         //         conn.execute("SET user = 'cli-tool';").await?;
