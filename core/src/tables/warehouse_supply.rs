@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::traits::Insertable;
 
 /// Represents relation table between [`Warehouse`](`super::warehouse::Warehouse`) and [`Supply`](`super::supply::Supply`)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WarehouseSupply {
     /// Foreign key references [`Warehouse`](`super::warehouse::Warehouse`)
     pub item: Uuid,

@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
+use sqlx::{postgres::PgArguments, query, query::Query, query_as, FromRow, Postgres};
 use uuid::Uuid;
 
-use crate::{traits::Insertable, types::staff_status::StaffStatus};
+use crate::{traits::Insertable, types::staff_status::StaffStatus, PgQueryAs};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Staff {
     pub uuid: Uuid,
     /// Foreign key references [`LaborContract`](`super::labor_contract::LaborContract`)
@@ -37,6 +37,10 @@ impl Staff {
 
     pub fn new_auto(contract: Uuid, position: Uuid, status: StaffStatus) -> Self {
         Self::new(Uuid::new_v4(), contract, position, status)
+    }
+
+    pub fn get_by_uuid(uuid: Uuid) -> PgQueryAs<Self> {
+        query_as(r#"SELECT * FROM "Staff" WHERE uuid = $1"#).bind(uuid)
     }
 }
 

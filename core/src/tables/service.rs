@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{traits::Insertable, types::metatime::MetaTime};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Service {
     pub uuid: Uuid,
     pub name: String,

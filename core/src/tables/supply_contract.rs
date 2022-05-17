@@ -8,7 +8,7 @@ use crate::{
     types::{contract_status::ContractStatus, metatime::MetaTime},
 };
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SupplyContract {
     pub uuid: Uuid,
     /// Foreign key references [`Supplier`](super::supplier::Supplier)

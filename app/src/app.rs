@@ -1,15 +1,17 @@
+use std::sync::Arc;
+
 use eframe::{
-    egui::{
-        global_dark_light_mode_switch, CentralPanel, Context, RichText, TextEdit, TextStyle,
-        TopBottomPanel, Visuals, Window,
-    },
-    emath::Align2,
-    epaint::Vec2,
+    egui::{global_dark_light_mode_switch, CentralPanel, Context, TopBottomPanel, Visuals},
     App as EApp, CreationContext, Frame,
 };
+use tokio::runtime::Runtime;
+
+use crate::{model::user::User, utils::Pool, view::AppViews};
 
 pub struct App {
-    state: AppScreen,
+    view: AppViews,
+    runtime: Runtime,
+    pool: Option<Pool>,
 }
 
 impl App {
@@ -20,174 +22,55 @@ impl App {
     /// 2. If first step fails then setup window will appear.
     ///    If remember were checked then user will skip auth step.
     ///    Else user will need to go through auth step.
-    pub fn new(cc: &CreationContext<'_>) -> Self {
+    pub fn new(cc: &CreationContext<'_>, runtime: Runtime) -> Self {
         cc.egui_ctx.set_visuals(Visuals::dark());
 
         // TODO: Profile session
         Self {
-            state: AppScreen::setup(),
+            view: AppViews::setup(),
+            runtime,
+            pool: None,
         }
     }
 }
 
 impl EApp for App {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        let mut state = None;
-
         TopBottomPanel::top("top_bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 global_dark_light_mode_switch(ui);
 
-                if let AppScreen::Main = &mut self.state {
+                if let AppViews::Main { .. } = &mut self.view {
                     ui.separator();
                 }
             })
         });
 
-        match &mut self.state {
-            AppScreen::Auth {
-                login_input,
-                password_input,
-                remember_me,
-            } => {
-                Window::new("Authorization")
-                    .resizable(false)
-                    .collapsible(false)
-                    .anchor(Align2::CENTER_CENTER, Vec2::ZERO) // FIX
-                    .show(ctx, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.add(
-                                TextEdit::singleline(login_input)
-                                    .font(TextStyle::Heading)
-                                    .hint_text("Login"),
-                            );
-                            ui.add_space(8.0);
-                            ui.add(
-                                TextEdit::singleline(password_input)
-                                    .font(TextStyle::Heading)
-                                    .hint_text("Password")
-                                    .password(true),
-                            );
-                            ui.add_space(8.0);
-                            ui.checkbox(remember_me, "Remember me");
-                            ui.add_space(16.0);
-                            if ui.button("Sign In").clicked() {
-                                state = Some(AppScreen::Main);
-                            }
-                        });
-                    });
+        match &mut self.view {
+            AppViews::Auth(view) => {
+                if let Some(user) = view.update(
+                    ctx,
+                    &mut self.runtime,
+                    Arc::clone(self.pool.as_ref().expect("Unwraping pool in auth view")),
+                ) {
+                    self.view = AppViews::Main { user }
+                }
             }
-            AppScreen::Setup {
-                host_input,
-                user_input,
-                password_input,
-                db_name_input,
-                admin_login_input,
-                admin_password_input,
-            } => {
-                Window::new("Set Up")
-                    .resizable(false)
-                    .collapsible(false)
-                    .anchor(Align2::CENTER_CENTER, Vec2::ZERO) // FIX
-                    .show(ctx, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.label(RichText::new("Connection").text_style(TextStyle::Heading));
-                            ui.separator();
-                            ui.add_space(8.0);
-                            ui.add(
-                                TextEdit::singleline(host_input)
-                                    .font(TextStyle::Heading)
-                                    .hint_text("DB Host"),
-                            );
-                            ui.add_space(8.0);
-                            ui.add(
-                                TextEdit::singleline(user_input)
-                                    .font(TextStyle::Heading)
-                                    .hint_text("DB User"),
-                            );
-                            ui.add_space(8.0);
-                            ui.add(
-                                TextEdit::singleline(password_input)
-                                    .font(TextStyle::Heading)
-                                    .hint_text("DB Password")
-                                    .password(true),
-                            );
-                            ui.add_space(8.0);
-                            ui.add(
-                                TextEdit::singleline(db_name_input)
-                                    .font(TextStyle::Heading)
-                                    .hint_text("DB Name"),
-                            );
-                            ui.add_space(16.0);
-                            ui.label(RichText::new("Admin User").text_style(TextStyle::Heading));
-                            ui.separator();
-                            ui.add_space(8.0);
-                            ui.add(
-                                TextEdit::singleline(admin_login_input)
-                                    .font(TextStyle::Heading)
-                                    .hint_text("Admin login"),
-                            );
-                            ui.add_space(8.0);
-                            ui.add(
-                                TextEdit::singleline(admin_password_input)
-                                    .font(TextStyle::Heading)
-                                    .hint_text("Admin password")
-                                    .password(true),
-                            );
-                            ui.add_space(16.0);
-                            if ui.button("Proceed").clicked() {
-                                state = Some(AppScreen::auth());
-                            }
-                        })
-                    });
+            AppViews::Setup(view) => {
+                if let Some(pool) = view.update(ctx, &self.runtime) {
+                    self.pool = Some(pool);
+                    self.view = AppViews::auth();
+                }
             }
-            AppScreen::Main => {
+            AppViews::Main { user } => {
                 CentralPanel::default().show(ctx, |ui| {
+                    ui.label(format!(
+                        "Hello: {} {}",
+                        user.person.first_name, user.person.last_name
+                    ));
                     ui.label("Main state [WIP]");
                 });
             }
-        }
-
-        if let Some(new) = state {
-            self.state = new;
-        }
-    }
-}
-
-pub enum AppScreen {
-    Auth {
-        login_input: String,
-        password_input: String,
-        remember_me: bool,
-    },
-    Setup {
-        host_input: String,
-        user_input: String,
-        password_input: String,
-        db_name_input: String,
-        admin_login_input: String,
-        admin_password_input: String,
-    },
-    Main,
-}
-
-impl AppScreen {
-    pub fn setup() -> Self {
-        Self::Setup {
-            host_input: String::new(),
-            user_input: String::new(),
-            password_input: String::new(),
-            db_name_input: String::new(),
-            admin_login_input: String::new(),
-            admin_password_input: String::new(),
-        }
-    }
-
-    pub fn auth() -> Self {
-        Self::Auth {
-            login_input: String::new(),
-            password_input: String::new(),
-            remember_me: false,
         }
     }
 }

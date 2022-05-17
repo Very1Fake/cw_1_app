@@ -1,16 +1,25 @@
+use anyhow::Result;
 use eframe::{run_native, NativeOptions};
+use tokio::runtime::Builder;
 
 use app::App;
 
 mod app;
 mod model;
+mod utils;
+mod view;
 
-#[tokio::main]
-async fn main() {
+fn main() -> Result<()> {
+    let runtime = Builder::new_multi_thread()
+        .worker_threads(2)
+        .max_blocking_threads(4)
+        .enable_all()
+        .build()?;
+
     run_native(
         "CW App",
         NativeOptions::default(),
-        Box::new(|cc| Box::new(App::new(cc))),
+        Box::new(|cc| Box::new(App::new(cc, runtime))),
     )
 }
 

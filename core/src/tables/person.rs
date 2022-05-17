@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
+use sqlx::{postgres::PgArguments, query, query::Query, query_as, FromRow, Postgres};
 use uuid::Uuid;
 
-use crate::{traits::Insertable, types::metatime::MetaTime};
+use crate::{traits::Insertable, types::metatime::MetaTime, PgQueryAs};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Person {
     pub uuid: Uuid,
     pub first_name: String,
@@ -66,6 +66,10 @@ impl Person {
             phone,
             MetaTime::default(),
         )
+    }
+
+    pub fn get_by_uuid(uuid: Uuid) -> PgQueryAs<Self> {
+        query_as(r#"SELECT * FROM "Person" WHERE uuid = $1"#).bind(uuid)
     }
 }
 

@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::traits::Insertable;
 
 /// Represents relation table between [`Order`](`super::order::Order`) and [`Service`](`super::service::Service`)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OrderService {
     /// Foreign key references [`Order`](`super::order::Order`)
     pub order: Uuid,

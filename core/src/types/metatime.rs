@@ -1,9 +1,10 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::types::Type;
 
 use crate::traits::Recreatable;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Type, Serialize, Deserialize, Clone, Debug)]
 pub struct MetaTime {
     pub updated: DateTime<Utc>,
     pub created: DateTime<Utc>,

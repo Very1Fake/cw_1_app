@@ -7,7 +7,7 @@ use crate::{
     types::{metatime::MetaTime, AccountRole},
 };
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Position {
     pub uuid: Uuid,
     pub name: String,

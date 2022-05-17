@@ -8,7 +8,7 @@ use crate::{
     types::{color::Color, metatime::MetaTime},
 };
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Phone {
     pub uuid: Uuid,
     /// Foreign key references [`Person`](`super::person::Person`)

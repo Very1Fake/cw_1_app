@@ -7,7 +7,7 @@ use crate::{
     types::{metatime::MetaTime, order_status::OrderStatus},
 };
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Order {
     pub uuid: Uuid,
     /// Foreign key references [`Person`](`super::person::Person`)

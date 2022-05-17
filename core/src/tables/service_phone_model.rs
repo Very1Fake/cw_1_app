@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::{traits::Insertable, types::MetaTime};
 
 /// Represents relation table between [`Service`](`super::service::Service`) and [`PhoneModel`](`super::phone_model::PhoneModel`)
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ServicePhoneModel {
     /// Foreign key references [`Service`](`super::service::Service`)
     pub service: Uuid,

@@ -1,12 +1,13 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, types::Uuid, Postgres};
+use sqlx::{postgres::PgArguments, query, query::Query, query_as, types::Uuid, FromRow, Postgres};
 
 use crate::{
     traits::Insertable,
     types::{account_role::AccountRole, account_status::AccountStatus, metatime::MetaTime},
+    PgQueryAs,
 };
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Account {
     pub uuid: Uuid,
     /// Foreign key references [`Staff`](`super::staff::Staff`)
@@ -69,6 +70,10 @@ impl Account {
             status,
             MetaTime::default(),
         )
+    }
+
+    pub fn get_by_login(login: String) -> PgQueryAs<Self> {
+        query_as(r#"SELECT * FROM "Account" WHERE login = $1"#).bind(login)
     }
 }
 

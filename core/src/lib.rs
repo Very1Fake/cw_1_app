@@ -4,6 +4,8 @@ pub use sqlx;
 pub use sqlx::types::BigDecimal;
 pub use uuid;
 
+pub use utils::{PgQuery, PgQueryAs};
+
 pub mod extensions;
 pub mod functions;
 pub mod generator;

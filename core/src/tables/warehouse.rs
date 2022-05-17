@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{traits::Insertable, types::MetaTime};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Warehouse {
     pub uuid: Uuid,
     /// Foreign key references [`Component`](`super::component::Component`)

@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::traits::Insertable;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Manufacturer {
     pub uuid: Uuid,
     pub name: String,

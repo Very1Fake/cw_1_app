@@ -1,14 +1,15 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
+use sqlx::{postgres::PgArguments, query, query::Query, query_as, FromRow, Postgres};
 use uuid::Uuid;
 
 use crate::{
     traits::Insertable,
     types::{contract_status::ContractStatus, metatime::MetaTime},
+    PgQueryAs,
 };
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct LaborContract {
     pub uuid: Uuid,
     /// Foreign key references [`Person`](`super::person::Person`)
@@ -65,6 +66,10 @@ impl LaborContract {
             signed,
             MetaTime::default(),
         )
+    }
+
+    pub fn get_by_uuid(uuid: Uuid) -> PgQueryAs<Self> {
+        query_as(r#"SELECT * FROM "LaborContract" WHERE uuid = $1"#).bind(uuid)
     }
 }
 
