@@ -115,22 +115,6 @@ impl SetupView {
                                 .hint_text("DB Name"),
                         );
                         ui.add_space(16.0);
-                        // ui.label(RichText::new("Admin User").text_style(TextStyle::Heading));
-                        // ui.separator();
-                        // ui.add_space(8.0);
-                        // ui.add(
-                        //     TextEdit::singleline(&mut self.admin_login_input)
-                        //         .font(TextStyle::Heading)
-                        //         .hint_text("Admin login"),
-                        // );
-                        // ui.add_space(8.0);
-                        // ui.add(
-                        //     TextEdit::singleline(&mut self.admin_password_input)
-                        //         .font(TextStyle::Heading)
-                        //         .hint_text("Admin password")
-                        //         .password(true),
-                        // );
-                        // ui.add_space(16.0);
                         if ui.button("Proceed").clicked() {
                             self.progress = {
                                 let uri = format!(
@@ -140,7 +124,6 @@ impl SetupView {
                                     self.host_input,
                                     self.db_name_input
                                 );
-                                println!("Uri: {uri}");
                                 let (tx, rx) = channel(2);
                                 Some(Request::new(
                                     runtime.spawn(async move {

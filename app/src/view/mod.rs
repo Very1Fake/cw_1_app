@@ -1,15 +1,17 @@
 use crate::model::user::User;
 
 use self::auth::AuthView;
+use self::main::MainView;
 use self::setup::SetupView;
 
 pub mod auth;
+pub mod main;
 pub mod setup;
 
 pub enum AppViews {
     Auth(AuthView),
     Setup(SetupView),
-    Main { user: User },
+    Main(MainView),
 }
 
 impl AppViews {
@@ -19,5 +21,9 @@ impl AppViews {
 
     pub fn auth() -> Self {
         Self::Auth(AuthView::new())
+    }
+
+    pub fn main(user: User) -> Self {
+        Self::Main(MainView::new(user))
     }
 }

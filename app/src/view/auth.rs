@@ -1,6 +1,6 @@
 use anyhow::bail;
 use cw_core::{
-    argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier},
+    argon2::{Argon2, PasswordHash, PasswordVerifier},
     sqlx::Error,
     tables::{Account, LaborContract, Person, Staff},
 };

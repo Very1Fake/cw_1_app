@@ -71,6 +71,10 @@ impl Person {
     pub fn get_by_uuid(uuid: Uuid) -> PgQueryAs<Self> {
         query_as(r#"SELECT * FROM "Person" WHERE uuid = $1"#).bind(uuid)
     }
+
+    pub fn get_all() -> PgQueryAs<Self> {
+        query_as(r#"SELECT * FROM "Person"#)
+    }
 }
 
 impl Insertable for Person {

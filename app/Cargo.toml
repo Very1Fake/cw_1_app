@@ -11,6 +11,7 @@ edition = "2021"
 cw-core = { path = "../core" }
 
 anyhow = "1.0"
+egui_extras = "0.18"
 eframe = "0.18"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.18", features = ["rt-multi-thread"] }

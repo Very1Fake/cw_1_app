@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use eframe::{
-    egui::{global_dark_light_mode_switch, CentralPanel, Context, TopBottomPanel, Visuals},
+    egui::{global_dark_light_mode_switch, Context, TopBottomPanel, Visuals},
     App as EApp, CreationContext, Frame,
 };
 use tokio::runtime::Runtime;
 
-use crate::{model::user::User, utils::Pool, view::AppViews};
+use crate::{utils::Pool, view::AppViews};
 
 pub struct App {
     view: AppViews,
@@ -51,9 +51,9 @@ impl EApp for App {
                 if let Some(user) = view.update(
                     ctx,
                     &mut self.runtime,
-                    Arc::clone(self.pool.as_ref().expect("Unwraping pool in auth view")),
+                    Arc::clone(self.pool.as_ref().expect("Unwrapping pool in auth view")),
                 ) {
-                    self.view = AppViews::Main { user }
+                    self.view = AppViews::main(user)
                 }
             }
             AppViews::Setup(view) => {
@@ -62,15 +62,11 @@ impl EApp for App {
                     self.view = AppViews::auth();
                 }
             }
-            AppViews::Main { user } => {
-                CentralPanel::default().show(ctx, |ui| {
-                    ui.label(format!(
-                        "Hello: {} {}",
-                        user.person.first_name, user.person.last_name
-                    ));
-                    ui.label("Main state [WIP]");
-                });
-            }
+            AppViews::Main(view) => view.update(
+                ctx,
+                &self.runtime,
+                Arc::clone(self.pool.as_ref().expect("Unwrapping pool in main view")),
+            ),
         }
     }
 }
