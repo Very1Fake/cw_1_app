@@ -115,11 +115,7 @@ impl MainView {
                     if ui
                         .selectable_label(
                             if let TabHandler::Loaded(current_tab) = &self.tab {
-                                if current_tab.as_tabs() == *tab {
-                                    true
-                                } else {
-                                    false
-                                }
+                                current_tab.as_tabs() == *tab
                             } else {
                                 false
                             },

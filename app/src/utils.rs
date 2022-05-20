@@ -8,17 +8,9 @@ use cw_core::sqlx::{
     Error, PgPool,
 };
 
-pub type Pool = Arc<PgPool>;
+use crate::model::config::SslMode;
 
-#[derive(Clone, Copy, Debug)]
-pub enum SslMode {
-    Disable,
-    Allow,
-    Prefer,
-    Require,
-    VerifyCa,
-    VerifyFull,
-}
+pub type Pool = Arc<PgPool>;
 
 pub async fn open_pool(uri: String, ssl_mode: SslMode) -> Result<PgPool, Error> {
     let options: PgConnectOptions = uri.parse()?;

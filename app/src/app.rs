@@ -61,7 +61,7 @@ impl EApp for App {
                 if let Some(user) = view.update(
                     ctx,
                     &mut self.config,
-                    &mut self.runtime,
+                    &self.runtime,
                     Arc::clone(self.pool.as_ref().expect("Unwrapping pool in auth view")),
                 ) {
                     self.view = AppViews::main(user)

@@ -22,9 +22,12 @@ use crate::{
 
 #[derive(Default)]
 pub struct AuthView {
+    // UI
     login_input: String,
     password_input: String,
     remember_me: bool,
+
+    // Internals
     processing: Option<Request<(), User>>,
     error: Option<String>,
 }
@@ -90,7 +93,7 @@ impl AuthView {
         pool: Pool,
     ) -> Option<User> {
         let mut forward = None;
-        let enabled = !self.processing.is_some();
+        let enabled = self.processing.is_none();
 
         Window::new("Authorization")
             .resizable(false)
@@ -134,8 +137,8 @@ impl AuthView {
         {
             let mut failed = false;
             if let Some(request) = &mut self.processing {
-                match &request.peek(runtime).status {
-                    RequestStatus::Finished(result) => match result {
+                if let RequestStatus::Finished(result) = &request.peek(runtime).status {
+                    match result {
                         Ok(user) => {
                             if self.remember_me {
                                 config.account = Some(ConfigAccount {
@@ -149,8 +152,7 @@ impl AuthView {
                             self.error = Some(format!("{err}"));
                             failed = true;
                         }
-                    },
-                    _ => (),
+                    }
                 }
             }
 
