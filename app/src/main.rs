@@ -3,6 +3,8 @@ use eframe::{run_native, NativeOptions};
 use tokio::runtime::Builder;
 
 use app::App;
+use tracing::{Level, Subscriber};
+use tracing_subscriber::fmt;
 
 mod app;
 mod model;
@@ -10,6 +12,15 @@ mod utils;
 mod view;
 
 fn main() -> Result<()> {
+    fmt()
+        .compact()
+        .with_max_level(if cfg!(debug_assertions) {
+            Level::TRACE
+        } else {
+            Level::INFO
+        })
+        .init();
+
     let runtime = Builder::new_multi_thread()
         .worker_threads(2)
         .max_blocking_threads(4)

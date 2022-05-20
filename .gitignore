@@ -16,3 +16,4 @@ Cargo.lock
 
 .vs/
 .vscode/
+.config.json

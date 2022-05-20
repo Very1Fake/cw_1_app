@@ -14,4 +14,7 @@ anyhow = "1.0"
 egui_extras = "0.18"
 eframe = "0.18"
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 tokio = { version = "1.18", features = ["rt-multi-thread"] }
+tracing = { version = "0.1", default-features = true, features = ["std"] }
+tracing-subscriber = "0.3"

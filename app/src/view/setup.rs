@@ -9,45 +9,78 @@ use eframe::{
 use tokio::{runtime::Runtime, sync::mpsc::channel, time::sleep};
 
 use crate::{
-    model::request::{Request, RequestStatus},
+    model::{
+        config::{Config, Connection},
+        request::{Request, RequestStatus},
+    },
     utils::{open_pool, Pool, SslMode},
 };
 
+#[derive(Default)]
 pub struct SetupView {
     host_input: String,
     user_input: String,
     password_input: String,
     db_name_input: String,
-    // admin_login_input: String,
-    // admin_password_input: String,
-    progress: Option<Request<SetupSteps, Pool>>,
+    processing: Option<Request<SetupSteps, Pool>>,
     error: Option<String>,
 }
 
 impl SetupView {
-    pub fn new() -> Self {
-        Self {
-            host_input: String::new(),
-            user_input: String::new(),
-            password_input: String::new(),
+    pub fn new_with_config(config: &Config, runtime: &Runtime) -> Self {
+        let mut this = Self {
             db_name_input: String::from("cw1_db"),
-            progress: None,
-            error: None,
+            ..Default::default()
+        };
+
+        if let Some(connection) = &config.connection {
+            this.host_input = connection.host.clone();
+            this.user_input = connection.user.clone();
+            this.password_input = connection.password.clone();
+            this.db_name_input = connection.database.clone();
+            this.start_processing(runtime)
         }
+
+        this
     }
 
-    pub fn update(&mut self, ctx: &Context, runtime: &Runtime) -> Option<Arc<PgPool>> {
-        if self.progress.is_some() {
+    fn start_processing(&mut self, runtime: &Runtime) {
+        let uri = format!(
+            "postgres://{}:{}@{}/{}",
+            self.user_input, self.password_input, self.host_input, self.db_name_input
+        );
+        let (tx, rx) = channel(2);
+        self.processing = Some(Request::new(
+            runtime.spawn(async move {
+                tx.send(SetupSteps::Text(String::from("Connecting")))
+                    .await?;
+                let pool = open_pool(uri, SslMode::Allow).await?;
+                tx.send(SetupSteps::Text(String::from("Connected"))).await?;
+                sleep(Duration::from_secs(1)).await;
+
+                Ok(Arc::new(pool))
+            }),
+            rx,
+        ))
+    }
+
+    pub fn update(
+        &mut self,
+        ctx: &Context,
+        config: &mut Config,
+        runtime: &Runtime,
+    ) -> Option<Arc<PgPool>> {
+        if self.processing.is_some() {
             let mut back = false;
             let mut forward = None;
             Window::new("Setup/Processing")
                 .resizable(false)
                 .collapsible(false)
-                .anchor(Align2::CENTER_CENTER, Vec2::ZERO) // FIX
+                .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
                 .show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
                         ui.spinner();
-                        match &self.progress.as_mut().unwrap().peek(runtime).status {
+                        match &self.processing.as_mut().unwrap().peek(runtime).status {
                             RequestStatus::Last(status) => {
                                 ui.label(if let Some(SetupSteps::Text(text)) = status {
                                     RichText::new(text).heading()
@@ -56,7 +89,15 @@ impl SetupView {
                                 });
                             }
                             RequestStatus::Finished(result) => match result {
-                                Ok(pool) => forward = Some(Arc::clone(pool)),
+                                Ok(pool) => {
+                                    config.connection = Some(Connection {
+                                        host: self.host_input.clone(),
+                                        user: self.user_input.clone(),
+                                        password: self.password_input.clone(),
+                                        database: self.db_name_input.clone(),
+                                    });
+                                    forward = Some(Arc::clone(pool))
+                                }
                                 Err(err) => {
                                     self.error = Some(format!("{err}"));
                                     back = true;
@@ -67,14 +108,14 @@ impl SetupView {
                 });
 
             if back {
-                self.progress = None;
+                self.processing = None;
             }
             forward
         } else {
             Window::new("Setup")
                 .resizable(false)
                 .collapsible(false)
-                .anchor(Align2::CENTER_CENTER, Vec2::ZERO) // FIX
+                .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
                 .show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
                         if let Some(error) = &self.error {
@@ -116,29 +157,7 @@ impl SetupView {
                         );
                         ui.add_space(16.0);
                         if ui.button("Proceed").clicked() {
-                            self.progress = {
-                                let uri = format!(
-                                    "postgres://{}:{}@{}/{}",
-                                    self.user_input,
-                                    self.password_input,
-                                    self.host_input,
-                                    self.db_name_input
-                                );
-                                let (tx, rx) = channel(2);
-                                Some(Request::new(
-                                    runtime.spawn(async move {
-                                        tx.send(SetupSteps::Text(String::from("Connecting")))
-                                            .await?;
-                                        let pool = open_pool(uri, SslMode::Allow).await?;
-                                        tx.send(SetupSteps::Text(String::from("Connected")))
-                                            .await?;
-                                        sleep(Duration::from_secs(1)).await;
-
-                                        Ok(Arc::new(pool))
-                                    }),
-                                    rx,
-                                ))
-                            }
+                            self.start_processing(runtime)
                         }
                     })
                 });

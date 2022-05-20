@@ -1,17 +1,20 @@
 use std::sync::Arc;
 
+use anyhow::Context as AnyContext;
 use eframe::{
     egui::{global_dark_light_mode_switch, Context, TopBottomPanel, Visuals},
-    App as EApp, CreationContext, Frame,
+    glow, App as EApp, CreationContext, Frame,
 };
 use tokio::runtime::Runtime;
+use tracing::trace;
 
-use crate::{utils::Pool, view::AppViews};
+use crate::{model::config::Config, utils::Pool, view::AppViews};
 
 pub struct App {
     view: AppViews,
     runtime: Runtime,
     pool: Option<Pool>,
+    config: Config,
 }
 
 impl App {
@@ -23,18 +26,25 @@ impl App {
     ///    If remember were checked then user will skip auth step.
     ///    Else user will need to go through auth step.
     pub fn new(cc: &CreationContext<'_>, runtime: Runtime) -> Self {
+        let config = Config::load().context("While loading config").unwrap();
+
         cc.egui_ctx.set_visuals(Visuals::dark());
 
-        // TODO: Profile session
         Self {
-            view: AppViews::setup(),
+            view: AppViews::setup(&config, &runtime),
             runtime,
             pool: None,
+            config,
         }
     }
 }
 
 impl EApp for App {
+    fn on_exit(&mut self, _gl: &glow::Context) {
+        trace!("Trying to save config");
+        self.config.save().context("While saving config").unwrap();
+    }
+
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         TopBottomPanel::top("top_bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
@@ -57,7 +67,7 @@ impl EApp for App {
                 }
             }
             AppViews::Setup(view) => {
-                if let Some(pool) = view.update(ctx, &self.runtime) {
+                if let Some(pool) = view.update(ctx, &mut self.config, &self.runtime) {
                     self.pool = Some(pool);
                     self.view = AppViews::auth();
                 }

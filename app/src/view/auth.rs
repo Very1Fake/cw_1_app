@@ -45,7 +45,7 @@ impl AuthView {
         Window::new("Authorization")
             .resizable(false)
             .collapsible(false)
-            .anchor(Align2::CENTER_CENTER, Vec2::ZERO) // FIX
+            .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     if let Some(error) = &self.error {

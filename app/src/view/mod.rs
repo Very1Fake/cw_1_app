@@ -1,3 +1,6 @@
+use tokio::runtime::Runtime;
+
+use crate::model::config::Config;
 use crate::model::user::User;
 
 use self::auth::AuthView;
@@ -15,8 +18,8 @@ pub enum AppViews {
 }
 
 impl AppViews {
-    pub fn setup() -> Self {
-        Self::Setup(SetupView::new())
+    pub fn setup(config: &Config, runtime: &Runtime) -> Self {
+        Self::Setup(SetupView::new_with_config(config, runtime))
     }
 
     pub fn auth() -> Self {
