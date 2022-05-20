@@ -1,12 +1,12 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres, FromRow};
 use uuid::Uuid;
 
 use crate::traits::Insertable;
 
 /// Represents relation table between [`Warehouse`](`super::warehouse::Warehouse`) and [`Supply`](`super::supply::Supply`)
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct WarehouseSupply {
     /// Foreign key references [`Warehouse`](`super::warehouse::Warehouse`)
     pub item: Uuid,

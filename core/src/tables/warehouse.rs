@@ -1,17 +1,21 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, types::BigDecimal, Postgres};
+use sqlx::{postgres::{PgArguments, types::PgMoney}, query, query::Query, types::BigDecimal, Postgres, FromRow};
 use uuid::Uuid;
 
 use crate::{traits::Insertable, types::MetaTime};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Warehouse {
     pub uuid: Uuid,
     /// Foreign key references [`Component`](`super::component::Component`)
     pub component: Uuid,
     /// Foreign key references [`Supplier`](`super::supplier::Supplier`)
     pub supplier: Uuid,
-    pub price: BigDecimal,
+    #[serde(
+        deserialize_with = "crate::utils::deserialize_pg_money",
+        serialize_with = "crate::utils::serialize_pg_money"
+    )]
+    pub price: PgMoney,
     pub amount: i32,
     pub meta: MetaTime,
 }
@@ -35,7 +39,7 @@ impl Warehouse {
         uuid: Uuid,
         component: Uuid,
         supplier: Uuid,
-        price: BigDecimal,
+        price: PgMoney,
         amount: i32,
         meta: MetaTime,
     ) -> Self {
@@ -54,7 +58,7 @@ impl Warehouse {
             Uuid::new_v4(),
             component,
             supplier,
-            price,
+            PgMoney::from_bigdecimal(price, 2).unwrap(),
             amount,
             MetaTime::default(),
         )
@@ -70,7 +74,7 @@ VALUES ($1, $2, $3, $4, $5);"#,
         .bind(self.uuid)
         .bind(self.component)
         .bind(self.supplier)
-        .bind(self.price.clone())
+        .bind(self.price)
         .bind(self.amount)
     }
 }

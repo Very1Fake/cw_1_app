@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres, query_as, FromRow};
 use uuid::Uuid;
 
-use crate::{traits::Insertable, types::metatime::MetaTime};
+use crate::{traits::Insertable, types::metatime::MetaTime, PgQueryAs};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Service {
     pub uuid: Uuid,
     pub name: String,
@@ -63,6 +63,10 @@ impl Service {
 
     pub fn new_auto(name: String, description: Option<String>) -> Self {
         Self::new(Uuid::new_v4(), name, description, MetaTime::default())
+    }
+
+    pub fn get_all() -> PgQueryAs<Self> {
+        query_as(r#"SELECT * FROM "Service""#)
     }
 }
 

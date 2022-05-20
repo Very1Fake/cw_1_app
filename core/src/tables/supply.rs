@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres, FromRow};
 use uuid::Uuid;
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
     types::{metatime::MetaTime, supply_status::SupplyStatus},
 };
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Supply {
     pub uuid: Uuid,
     /// Foreign key references [`SupplyContract`](`super::supply_contract::SupplyContract`)

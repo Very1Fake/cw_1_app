@@ -52,14 +52,14 @@ impl AuthView {
         self.processing = Some(Request::simple(runtime.spawn(async move {
             let account = match Account::get_by_login(login).fetch_one(&*pool).await {
                 Ok(account) => account,
-                Err(Error::RowNotFound) => return bail!("Account not found"),
-                Err(err) => return bail!(err),
+                Err(Error::RowNotFound) => bail!("Account not found"),
+                Err(err) => bail!(err),
             };
 
             let hash = if let Ok(hash) = PasswordHash::new(&account.password) {
                 hash
             } else {
-                return bail!("Can't parse password hash from db");
+                bail!("Can't parse password hash from db")
             };
 
             match Argon2::default().verify_password(password.as_bytes(), &hash) {
@@ -92,7 +92,6 @@ impl AuthView {
         runtime: &Runtime,
         pool: Pool,
     ) -> Option<User> {
-        let mut forward = None;
         let enabled = self.processing.is_none();
 
         Window::new("Authorization")
@@ -134,32 +133,29 @@ impl AuthView {
                     }
                 });
             });
-        {
-            let mut failed = false;
-            if let Some(request) = &mut self.processing {
-                if let RequestStatus::Finished(result) = &request.peek(runtime).status {
-                    match result {
-                        Ok(user) => {
-                            if self.remember_me {
-                                config.account = Some(ConfigAccount {
-                                    login: self.login_input.clone(),
-                                    password: self.password_input.clone(),
-                                })
-                            };
-                            forward = Some(user.clone())
-                        }
-                        Err(err) => {
-                            self.error = Some(format!("{err}"));
-                            failed = true;
-                        }
+            
+        
+        if let Some(mut request) = self.processing.take() {
+            if let RequestStatus::Finished(result) = request.peek(runtime).status.take() {
+                match result {
+                    Ok(user) => {
+                        if self.remember_me {
+                            config.account = Some(ConfigAccount {
+                                login: self.login_input.clone(),
+                                password: self.password_input.clone(),
+                            })
+                        };
+                        return Some(user)
+                    }
+                    Err(err) => {
+                        self.error = Some(format!("{err}"));
                     }
                 }
-            }
-
-            if failed {
-                self.processing = None;
+            } else {
+                self.processing = Some(request);
             }
         }
-        forward
+
+        None
     }
 }

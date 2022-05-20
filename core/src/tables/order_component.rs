@@ -1,18 +1,22 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, types::BigDecimal, Postgres};
+use sqlx::{postgres::{PgArguments, types::PgMoney}, query, query::Query, Postgres, FromRow};
 use uuid::Uuid;
 
 use crate::traits::Insertable;
 
 /// Represents relation table between [`Order`](`super::order::Order`) and [`Warehouse`](`super::warehouse::Warehouse`)
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct OrderWarehouse {
     /// Foreign key references [`Order`](`super::order::Order`)
     pub order: Uuid,
     /// Foreign key references [`Warehouse`](`super::warehouse::Warehouse`)
     pub item: Uuid,
     pub amount: i32,
-    pub price: BigDecimal,
+    #[serde(
+        deserialize_with = "crate::utils::deserialize_pg_money",
+        serialize_with = "crate::utils::serialize_pg_money"
+    )]
+    pub price: PgMoney,
 }
 
 impl OrderWarehouse {
@@ -27,7 +31,7 @@ impl OrderWarehouse {
 
     pub const DROP: &'static str = r#"DROP TABLE "OrderWarehouse";"#;
 
-    pub const fn new(order: Uuid, item: Uuid, amount: i32, price: BigDecimal) -> Self {
+    pub fn new(order: Uuid, item: Uuid, amount: i32, price: PgMoney) -> Self {
         Self {
             order,
             item,
@@ -42,6 +46,6 @@ impl Insertable for OrderWarehouse {
             .bind(self.order)
             .bind(self.item)
             .bind(self.amount)
-            .bind(self.price.clone())
+            .bind(self.price)
     }
 }

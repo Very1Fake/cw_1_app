@@ -26,7 +26,7 @@ pub struct SetupView {
     ssl_mode: SslMode,
 
     // Internals
-    processing: Option<Request<SetupSteps, Pool>>,
+    processing: Option<Request<String, Pool>>,
     error: Option<String>,
 }
 
@@ -57,10 +57,9 @@ impl SetupView {
         let (tx, rx) = channel(2);
         self.processing = Some(Request::new(
             runtime.spawn(async move {
-                tx.send(SetupSteps::Text(String::from("Connecting")))
-                    .await?;
+                tx.send(String::from("Connecting")).await?;
                 let pool = open_pool(uri, ssl_mode).await?;
-                tx.send(SetupSteps::Text(String::from("Connected"))).await?;
+                tx.send(String::from("Connected")).await?;
                 sleep(Duration::from_secs(1)).await;
 
                 Ok(Arc::new(pool))
@@ -75,7 +74,6 @@ impl SetupView {
         config: &mut Config,
         runtime: &Runtime,
     ) -> Option<Arc<PgPool>> {
-        let mut back = false;
         let mut forward = None;
         Window::new(if self.processing.is_some() {
             "Setup/Processing"
@@ -86,16 +84,18 @@ impl SetupView {
         .collapsible(false)
         .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
         .show(ctx, |ui| {
-            if self.processing.is_some() {
+            if let Some(mut request) = self.processing.take() {
                 ui.vertical_centered(|ui| {
                     ui.spinner();
-                    match &self.processing.as_mut().unwrap().peek(runtime).status {
-                        RequestStatus::Last(status) => {
-                            ui.label(if let Some(SetupSteps::Text(text)) = status {
-                                RichText::new(text).heading()
+                    ui.add_space(8.0);
+                    match request.peek(runtime).status.take() {
+                        RequestStatus::Last(item) => {
+                            ui.label(if let Some(status) = item {
+                                RichText::new(status).heading()
                             } else {
                                 RichText::new("Waiting").heading()
                             });
+                            self.processing = Some(request);
                         }
                         RequestStatus::Finished(result) => match result {
                             Ok(pool) => {
@@ -106,15 +106,14 @@ impl SetupView {
                                     database: self.db_name_input.clone(),
                                     ssl_mode: self.ssl_mode,
                                 });
-                                forward = Some(Arc::clone(pool))
+                                forward = Some(pool);
                             }
                             Err(err) => {
                                 self.error = Some(format!("{err}"));
-                                back = true;
                             }
                         },
                     };
-                })
+                });
             } else {
                 ui.vertical_centered(|ui| {
                     if let Some(error) = &self.error {
@@ -173,18 +172,10 @@ impl SetupView {
                     if ui.button("Proceed").clicked() {
                         self.start_processing(runtime)
                     }
-                })
+                });
             }
         });
 
-        if back {
-            self.processing = None;
-        }
         forward
     }
-}
-
-#[derive(Debug)]
-enum SetupSteps {
-    Text(String),
 }

@@ -1,17 +1,21 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, types::BigDecimal, Postgres};
+use sqlx::{postgres::{PgArguments, types::PgMoney}, query, query::Query, Postgres, FromRow};
 use uuid::Uuid;
 
 use crate::traits::Insertable;
 
 /// Represents relation table between [`Order`](`super::order::Order`) and [`Service`](`super::service::Service`)
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct OrderService {
     /// Foreign key references [`Order`](`super::order::Order`)
     pub order: Uuid,
     /// Foreign key references [`Service`](`super::service::Service`)
     pub service: Uuid,
-    pub price: BigDecimal,
+    #[serde(
+        deserialize_with = "crate::utils::deserialize_pg_money",
+        serialize_with = "crate::utils::serialize_pg_money"
+    )]
+    pub price: PgMoney,
 }
 
 impl OrderService {
@@ -25,7 +29,7 @@ impl OrderService {
 
     pub const DROP: &'static str = r#"DROP TABLE "OrderService";"#;
 
-    pub const fn new(order: Uuid, service: Uuid, price: BigDecimal) -> Self {
+    pub fn new(order: Uuid, service: Uuid, price: PgMoney) -> Self {
         Self {
             order,
             service,
@@ -39,6 +43,6 @@ impl Insertable for OrderService {
         query(r#"INSERT INTO "OrderService" VALUES ($1, $2, $3);"#)
             .bind(self.order)
             .bind(self.service)
-            .bind(self.price.clone())
+            .bind(self.price)
     }
 }

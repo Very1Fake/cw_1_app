@@ -1,3 +1,5 @@
+use std::mem::replace;
+
 use anyhow::Result;
 use tokio::{
     runtime::Runtime,
@@ -45,6 +47,12 @@ impl<T, R> Request<T, R> {
 pub enum RequestStatus<T, R> {
     Last(Option<T>),
     Finished(Result<R>),
+}
+
+impl<T, R> RequestStatus<T, R> {
+    pub fn take(&mut self) -> Self {
+        replace(self, Self::Last(None))
+    }
 }
 
 impl<T, R> Default for RequestStatus<T, R> {

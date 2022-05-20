@@ -918,7 +918,7 @@ impl Config {
                 } else {
                     let spm = spm_list[rng.gen_range(0..spm_list.len())];
 
-                    OrderService::new(order.uuid, spm.service, spm.price.clone())
+                    OrderService::new(order.uuid, spm.service, spm.price)
                 }
             })
             .collect()
@@ -977,7 +977,7 @@ impl Config {
                     .collect();
                 let item = items[rng.gen_range(0..items.len())]; // TODO: Decrease if amount is positive
 
-                OrderWarehouse::new(order.uuid, item.uuid, 1, item.price.clone())
+                OrderWarehouse::new(order.uuid, item.uuid, 1, item.price)
             })
             .collect()
     }

@@ -73,7 +73,7 @@ impl Person {
     }
 
     pub fn get_all() -> PgQueryAs<Self> {
-        query_as(r#"SELECT * FROM "Person"#)
+        query_as(r#"SELECT * FROM "Person""#)
     }
 }
 

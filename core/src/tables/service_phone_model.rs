@@ -1,18 +1,22 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, types::BigDecimal, Postgres};
+use sqlx::{postgres::{PgArguments, types::PgMoney}, query, query::Query, types::BigDecimal, Postgres, FromRow};
 use uuid::Uuid;
 
 use crate::{traits::Insertable, types::MetaTime};
 
 /// Represents relation table between [`Service`](`super::service::Service`) and [`PhoneModel`](`super::phone_model::PhoneModel`)
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct ServicePhoneModel {
     /// Foreign key references [`Service`](`super::service::Service`)
     pub service: Uuid,
     /// Foreign key references [`PhoneModel`](`super::phone_model::PhoneModel`)
     pub phone_model: Uuid,
     /// Recommended price
-    pub price: BigDecimal,
+    #[serde(
+        deserialize_with = "crate::utils::deserialize_pg_money",
+        serialize_with = "crate::utils::serialize_pg_money"
+    )]
+    pub price: PgMoney,
     pub meta: MetaTime,
 }
 
@@ -29,11 +33,11 @@ impl ServicePhoneModel {
 
     pub const DROP: &'static str = r#"DROP TABLE "ServicePhoneModel";"#;
 
-    pub const fn new(service: Uuid, phone_model: Uuid, price: BigDecimal, meta: MetaTime) -> Self {
+    pub fn new(service: Uuid, phone_model: Uuid, price: BigDecimal, meta: MetaTime) -> Self {
         Self {
             service,
             phone_model,
-            price,
+            price: PgMoney::from_bigdecimal(price, 2).unwrap(),
             meta,
         }
     }
@@ -47,6 +51,6 @@ impl Insertable for ServicePhoneModel {
         query(r#"INSERT INTO "ServicePhoneModel" VALUES ($1, $2, $3);"#)
             .bind(self.service)
             .bind(self.phone_model)
-            .bind(self.price.clone())
+            .bind(self.price)
     }
 }

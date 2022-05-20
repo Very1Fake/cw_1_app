@@ -1,6 +1,6 @@
 use mac_address::MacAddress;
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, Postgres};
+use sqlx::{postgres::PgArguments, query, query::Query, Postgres, FromRow};
 use uuid::Uuid;
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
     types::{color::Color, metatime::MetaTime},
 };
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Phone {
     pub uuid: Uuid,
     /// Foreign key references [`Person`](`super::person::Person`)
