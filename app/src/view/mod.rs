@@ -2,6 +2,7 @@ use tokio::runtime::Runtime;
 
 use crate::model::config::Config;
 use crate::model::user::User;
+use crate::utils::Pool;
 
 use self::auth::AuthView;
 use self::main::MainView;
@@ -22,8 +23,8 @@ impl AppViews {
         Self::Setup(SetupView::new_with_config(config, runtime))
     }
 
-    pub fn auth() -> Self {
-        Self::Auth(AuthView::new())
+    pub fn auth(config: &Config, runtime: &Runtime, pool: Pool) -> Self {
+        Self::Auth(AuthView::new_with_config(config, runtime, pool))
     }
 
     pub fn main(user: User) -> Self {

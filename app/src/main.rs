@@ -3,7 +3,7 @@ use eframe::{run_native, NativeOptions};
 use tokio::runtime::Builder;
 
 use app::App;
-use tracing::{Level, Subscriber};
+use tracing::Level;
 use tracing_subscriber::fmt;
 
 mod app;
@@ -34,11 +34,6 @@ fn main() -> Result<()> {
     )
 }
 
-// TODO: Role-based main screen prototype
-// TODO: Async sql queries
 // TODO: Secure authorization process
-// TODO: Auto random dataset generation
 // TODO: Complex queries/forms
 
-// TODO: Log tab for admin role
-// TODO: Tracing log

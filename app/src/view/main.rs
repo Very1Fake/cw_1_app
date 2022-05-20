@@ -274,7 +274,7 @@ impl MainView {
                             .resizable(true)
                             .column(Size::exact(240.0))
                             .column(Size::initial(120.0))
-                            .column(Size::exact(80.0))
+                            .column(Size::exact(50.0))
                             .header(20.0, |mut header| {
                                 header.col(|ui| {
                                     ui.heading("UUID");
@@ -364,7 +364,7 @@ impl MainView {
                             .column(Size::initial(120.0))
                             .column(Size::initial(120.0))
                             .column(Size::initial(210.0))
-                            .column(Size::exact(30.0))
+                            .column(Size::exact(50.0))
                             .header(20.0, |mut header| {
                                 header.col(|ui| {
                                     ui.heading("UUID");

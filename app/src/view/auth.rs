@@ -13,12 +13,14 @@ use tokio::runtime::Runtime;
 
 use crate::{
     model::{
+        config::{Account as ConfigAccount, Config},
         request::{Request, RequestStatus},
         user::User,
     },
     utils::Pool,
 };
 
+#[derive(Default)]
 pub struct AuthView {
     login_input: String,
     password_input: String,
@@ -28,17 +30,65 @@ pub struct AuthView {
 }
 
 impl AuthView {
-    pub fn new() -> Self {
-        Self {
-            login_input: String::new(),
-            password_input: String::new(),
-            remember_me: false,
-            processing: None,
-            error: None,
+    pub fn new_with_config(config: &Config, runtime: &Runtime, pool: Pool) -> Self {
+        let mut this = Self::default();
+
+        if let Some(account) = &config.account {
+            this.login_input = account.login.clone();
+            this.password_input = account.password.clone();
+            this.remember_me = true;
+            this.start_processing(runtime, pool);
         }
+
+        this
     }
 
-    pub fn update(&mut self, ctx: &Context, runtime: &Runtime, pool: Pool) -> Option<User> {
+    fn start_processing(&mut self, runtime: &Runtime, pool: Pool) {
+        let login = self.login_input.clone();
+        let password = self.password_input.clone();
+        self.processing = Some(Request::simple(runtime.spawn(async move {
+            let account = match Account::get_by_login(login).fetch_one(&*pool).await {
+                Ok(account) => account,
+                Err(Error::RowNotFound) => return bail!("Account not found"),
+                Err(err) => return bail!(err),
+            };
+
+            let hash = if let Ok(hash) = PasswordHash::new(&account.password) {
+                hash
+            } else {
+                return bail!("Can't parse password hash from db");
+            };
+
+            match Argon2::default().verify_password(password.as_bytes(), &hash) {
+                Ok(_) => {
+                    let staff = Staff::get_by_uuid(account.staff).fetch_one(&*pool).await?;
+                    let labor_contract = LaborContract::get_by_uuid(staff.contract)
+                        .fetch_one(&*pool)
+                        .await?;
+                    let person = Person::get_by_uuid(labor_contract.person)
+                        .fetch_one(&*pool)
+                        .await?;
+                    Ok(User {
+                        account,
+                        staff,
+                        labor_contract,
+                        person,
+                    })
+                }
+                Err(err) => {
+                    bail!(err)
+                }
+            }
+        })))
+    }
+
+    pub fn update(
+        &mut self,
+        ctx: &Context,
+        config: &mut Config,
+        runtime: &Runtime,
+        pool: Pool,
+    ) -> Option<User> {
         let mut forward = None;
         let enabled = !self.processing.is_some();
 
@@ -77,51 +127,7 @@ impl AuthView {
                     ui.add_enabled(enabled, Checkbox::new(&mut self.remember_me, "Remember me"));
                     ui.add_space(16.0);
                     if ui.add_enabled(enabled, Button::new("Sign In")).clicked() {
-                        self.processing = {
-                            let login = self.login_input.clone();
-                            let password = self.password_input.clone();
-                            Some(Request::simple(runtime.spawn(async move {
-                                let account = match Account::get_by_login(login)
-                                    .fetch_one(&*pool)
-                                    .await
-                                {
-                                    Ok(account) => account,
-                                    Err(Error::RowNotFound) => return bail!("Account not found"),
-                                    Err(err) => return bail!(err),
-                                };
-
-                                let hash = if let Ok(hash) = PasswordHash::new(&account.password) {
-                                    hash
-                                } else {
-                                    return bail!("Can't parse password hash from db");
-                                };
-
-                                match Argon2::default().verify_password(password.as_bytes(), &hash)
-                                {
-                                    Ok(_) => {
-                                        let staff = Staff::get_by_uuid(account.staff)
-                                            .fetch_one(&*pool)
-                                            .await?;
-                                        let labor_contract =
-                                            LaborContract::get_by_uuid(staff.contract)
-                                                .fetch_one(&*pool)
-                                                .await?;
-                                        let person = Person::get_by_uuid(labor_contract.person)
-                                            .fetch_one(&*pool)
-                                            .await?;
-                                        Ok(User {
-                                            account,
-                                            staff,
-                                            labor_contract,
-                                            person,
-                                        })
-                                    }
-                                    Err(err) => {
-                                        bail!(err)
-                                    }
-                                }
-                            })))
-                        }
+                        self.start_processing(runtime, pool)
                     }
                 });
             });
@@ -130,7 +136,15 @@ impl AuthView {
             if let Some(request) = &mut self.processing {
                 match &request.peek(runtime).status {
                     RequestStatus::Finished(result) => match result {
-                        Ok(user) => forward = Some(user.clone()),
+                        Ok(user) => {
+                            if self.remember_me {
+                                config.account = Some(ConfigAccount {
+                                    login: self.login_input.clone(),
+                                    password: self.password_input.clone(),
+                                })
+                            };
+                            forward = Some(user.clone())
+                        }
                         Err(err) => {
                             self.error = Some(format!("{err}"));
                             failed = true;

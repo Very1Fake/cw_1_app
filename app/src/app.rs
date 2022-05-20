@@ -60,6 +60,7 @@ impl EApp for App {
             AppViews::Auth(view) => {
                 if let Some(user) = view.update(
                     ctx,
+                    &mut self.config,
                     &mut self.runtime,
                     Arc::clone(self.pool.as_ref().expect("Unwrapping pool in auth view")),
                 ) {
@@ -69,7 +70,15 @@ impl EApp for App {
             AppViews::Setup(view) => {
                 if let Some(pool) = view.update(ctx, &mut self.config, &self.runtime) {
                     self.pool = Some(pool);
-                    self.view = AppViews::auth();
+                    self.view = AppViews::auth(
+                        &self.config,
+                        &self.runtime,
+                        Arc::clone(
+                            self.pool
+                                .as_ref()
+                                .expect("Unwrapping pool in setup view (moving to auth view)"),
+                        ),
+                    );
                 }
             }
             AppViews::Main(view) => view.update(
