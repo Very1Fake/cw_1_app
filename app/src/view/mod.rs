@@ -19,15 +19,34 @@ pub enum AppViews {
 }
 
 impl AppViews {
-    pub fn setup(config: &Config, runtime: &Runtime) -> Self {
-        Self::Setup(SetupView::new_with_config(config, runtime))
+    pub fn setup(config: &Config) -> Self {
+        Self::Setup(SetupView::from_config(config))
     }
 
-    pub fn auth(config: &Config, runtime: &Runtime, pool: Pool) -> Self {
-        Self::Auth(AuthView::new_with_config(config, runtime, pool))
+    pub fn auth(config: &Config) -> Self {
+        Self::Auth(AuthView::from_config(config))
+    }
+
+    pub fn setup_reactive(config: &Config, runtime: &Runtime) -> Self {
+        Self::Setup(SetupView::reactive(config, runtime))
+    }
+
+    pub fn auth_reactive(config: &Config, runtime: &Runtime, pool: Pool) -> Self {
+        Self::Auth(AuthView::reactive(config, runtime, pool))
     }
 
     pub fn main(user: User) -> Self {
         Self::Main(MainView::new(user))
+    }
+}
+
+pub enum ViewResponse<T> {
+    Remain,
+    Next((T, bool)), // TODO: Make reactive move
+}
+
+impl<T> ViewResponse<T> {
+    pub fn next(payload: T, reactive: bool) -> Self {
+        Self::Next((payload, reactive))
     }
 }

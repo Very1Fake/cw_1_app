@@ -16,6 +16,8 @@ use crate::{
     utils::{open_pool, Pool},
 };
 
+use super::ViewResponse;
+
 #[derive(Default)]
 pub struct SetupView {
     // UI
@@ -26,12 +28,13 @@ pub struct SetupView {
     ssl_mode: SslMode,
 
     // Internals
+    is_reactive: bool,
     processing: Option<Request<String, Pool>>,
     error: Option<String>,
 }
 
 impl SetupView {
-    pub fn new_with_config(config: &Config, runtime: &Runtime) -> Self {
+    pub fn from_config(config: &Config) -> Self {
         let mut this = Self {
             db_name_input: String::from("cw1_db"),
             ..Default::default()
@@ -42,9 +45,15 @@ impl SetupView {
             this.user_input = connection.user.clone();
             this.password_input = connection.password.clone();
             this.db_name_input = connection.database.clone();
-            this.start_processing(runtime)
         }
 
+        this
+    }
+
+    pub fn reactive(config: &Config, runtime: &Runtime) -> Self {
+        let mut this = Self::from_config(config);
+        this.is_reactive = true;
+        this.start_processing(runtime);
         this
     }
 
@@ -73,8 +82,8 @@ impl SetupView {
         ctx: &Context,
         config: &mut Config,
         runtime: &Runtime,
-    ) -> Option<Arc<PgPool>> {
-        let mut forward = None;
+    ) -> ViewResponse<Arc<PgPool>> {
+        let mut response = ViewResponse::Remain;
         Window::new(if self.processing.is_some() {
             "Setup/Processing"
         } else {
@@ -106,7 +115,7 @@ impl SetupView {
                                     database: self.db_name_input.clone(),
                                     ssl_mode: self.ssl_mode,
                                 });
-                                forward = Some(pool);
+                                response = ViewResponse::next(pool, self.is_reactive);
                             }
                             Err(err) => {
                                 self.error = Some(format!("{err}"));
@@ -176,6 +185,6 @@ impl SetupView {
             }
         });
 
-        forward
+        response
     }
 }

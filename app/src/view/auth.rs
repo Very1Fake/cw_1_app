@@ -20,6 +20,8 @@ use crate::{
     utils::Pool,
 };
 
+use super::ViewResponse;
+
 #[derive(Default)]
 pub struct AuthView {
     // UI
@@ -28,21 +30,28 @@ pub struct AuthView {
     remember_me: bool,
 
     // Internals
+    is_reactive: bool,
     processing: Option<Request<(), User>>,
     error: Option<String>,
 }
 
 impl AuthView {
-    pub fn new_with_config(config: &Config, runtime: &Runtime, pool: Pool) -> Self {
+    pub fn from_config(config: &Config) -> Self {
         let mut this = Self::default();
 
         if let Some(account) = &config.account {
             this.login_input = account.login.clone();
             this.password_input = account.password.clone();
             this.remember_me = true;
-            this.start_processing(runtime, pool);
         }
 
+        this
+    }
+
+    pub fn reactive(config: &Config, runtime: &Runtime, pool: Pool) -> Self {
+        let mut this = Self::from_config(config);
+        this.is_reactive = true;
+        this.start_processing(runtime, pool);
         this
     }
 
@@ -91,7 +100,7 @@ impl AuthView {
         config: &mut Config,
         runtime: &Runtime,
         pool: Pool,
-    ) -> Option<User> {
+    ) -> ViewResponse<User> {
         let enabled = self.processing.is_none();
 
         Window::new("Authorization")
@@ -145,7 +154,7 @@ impl AuthView {
                                 password: self.password_input.clone(),
                             })
                         };
-                        return Some(user)
+                        return ViewResponse::next(user, self.is_reactive)
                     }
                     Err(err) => {
                         self.error = Some(format!("{err}"));
@@ -156,6 +165,6 @@ impl AuthView {
             }
         }
 
-        None
+        ViewResponse::Remain
     }
 }

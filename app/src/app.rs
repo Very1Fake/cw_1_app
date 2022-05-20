@@ -8,7 +8,7 @@ use eframe::{
 use tokio::runtime::Runtime;
 use tracing::trace;
 
-use crate::{model::config::Config, utils::Pool, view::AppViews};
+use crate::{model::config::Config, utils::Pool, view::{AppViews, ViewResponse}};
 
 pub struct App {
     view: AppViews,
@@ -31,7 +31,7 @@ impl App {
         cc.egui_ctx.set_visuals(Visuals::dark());
 
         Self {
-            view: AppViews::setup(&config, &runtime),
+            view: AppViews::setup_reactive(&config, &runtime),
             runtime,
             pool: None,
             config,
@@ -50,15 +50,26 @@ impl EApp for App {
             ui.horizontal(|ui| {
                 global_dark_light_mode_switch(ui);
 
-                if let AppViews::Main { .. } = &mut self.view {
+                if !matches!(self.view, AppViews::Setup(_)) {
                     ui.separator();
+                    ui.menu_button("Menu", |ui| {
+                        if matches!(self.view, AppViews::Main(_)) && ui.button("Logout").clicked() {
+                            self.view = AppViews::auth(&self.config);
+                            ui.close_menu();
+                        }
+                        if ui.button("Disconnect").clicked() {
+                            self.pool.take();
+                            self.view = AppViews::setup(&self.config);
+                            ui.close_menu();
+                        }
+                    });
                 }
             })
         });
 
         match &mut self.view {
             AppViews::Auth(view) => {
-                if let Some(user) = view.update(
+                if let ViewResponse::Next((user, _)) = view.update(
                     ctx,
                     &mut self.config,
                     &self.runtime,
@@ -68,9 +79,9 @@ impl EApp for App {
                 }
             }
             AppViews::Setup(view) => {
-                if let Some(pool) = view.update(ctx, &mut self.config, &self.runtime) {
+                if let ViewResponse::Next((pool, _)) = view.update(ctx, &mut self.config, &self.runtime) {
                     self.pool = Some(pool);
-                    self.view = AppViews::auth(
+                    self.view = AppViews::auth_reactive(
                         &self.config,
                         &self.runtime,
                         Arc::clone(
