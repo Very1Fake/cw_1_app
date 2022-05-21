@@ -1,10 +1,14 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{mem::replace, sync::Arc};
 
 use cw_core::{
-    generator::Config,
     tables::{Manufacturer, Person, Position, Service, Supplier},
+    uuid::Uuid,
 };
-use eframe::egui::{Context, TopBottomPanel, Window};
+use eframe::{
+    egui::{Button, Context, RichText, TopBottomPanel, Window},
+    emath::{Align2, Vec2},
+    epaint::Color32,
+};
 use egui_extras::Size;
 use tokio::runtime::Runtime;
 
@@ -16,13 +20,15 @@ use crate::{
     utils::Pool,
 };
 
-use super::table::{Table, COUNTRY_WIDTH, ID_WIDTH, TIMESTAMP_WIDTH, UUID_WIDTH};
-
-pub type WindowStorage = BTreeMap<TableWindow, (bool, WindowState)>;
+use super::table::{
+    Table, TableData, TableWindow, WindowState, WindowStorage, BUTTON_WIDTH, COUNTRY_WIDTH,
+    ID_WIDTH, TIMESTAMP_WIDTH, UUID_WIDTH,
+};
 
 pub struct MainView {
     user: User,
     windows: WindowStorage,
+    delete_prompt: DeletePrompt,
 }
 
 impl MainView {
@@ -30,6 +36,7 @@ impl MainView {
         Self {
             user,
             windows: TableWindow::all(),
+            delete_prompt: DeletePrompt::None,
         }
     }
 
@@ -50,6 +57,108 @@ impl MainView {
             })
         });
 
+        if !self.delete_prompt.is_none() {
+            Window::new("Delete confirmation")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
+                .show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        // FIX: WTF
+                        match self.delete_prompt.take() {
+                            DeletePrompt::Error(msg) => {
+                                ui.collapsing(
+                                    RichText::new("An error occurred")
+                                        .heading()
+                                        .color(Color32::RED),
+                                    |ui| ui.label(&msg),
+                                );
+                                ui.add_space(8.0);
+                                self.delete_prompt = if ui.button("Close").clicked() {
+                                    DeletePrompt::None
+                                } else {
+                                    DeletePrompt::Error(msg)
+                                }
+                            }
+                            DeletePrompt::Loading((window, mut request)) => {
+                                self.delete_prompt = match request.peek(runtime).status.take() {
+                                    RequestStatus::Finished(result) => match result {
+                                        Ok(_) => {
+                                            self.windows.get_mut(&window).unwrap().1 =
+                                                WindowState::load(
+                                                    runtime,
+                                                    Arc::clone(&pool),
+                                                    window,
+                                                );
+                                            DeletePrompt::None
+                                        }
+                                        Err(err) => DeletePrompt::Error(format!("{err}")),
+                                    },
+                                    _ => {
+                                        ui.spinner();
+                                        ui.add_space(8.0);
+                                        ui.label("Deleting row");
+                                        DeletePrompt::Loading((window, request))
+                                    }
+                                }
+                            }
+                            DeletePrompt::Confirm((uuid, window)) => {
+                                ui.label(format!(
+                                    "Are you sure you want to delete '{}' from '{}' table",
+                                    uuid,
+                                    window.as_str()
+                                ));
+                                if ui.add(Button::new("Delete").fill(Color32::RED)).clicked() {
+                                    let d_pool = Arc::clone(&pool);
+                                    let d_uuid = uuid;
+                                    self.delete_prompt = DeletePrompt::Loading((
+                                        window,
+                                        Request::simple(runtime, move || async move {
+                                            match window {
+                                                TableWindow::People => {
+                                                    Person::delete_by_uuid(d_uuid)
+                                                        .execute(&*d_pool)
+                                                        .await?;
+                                                }
+                                                TableWindow::Positions => {
+                                                    Position::delete_by_uuid(d_uuid)
+                                                        .execute(&*d_pool)
+                                                        .await?;
+                                                }
+                                                TableWindow::Manufacturers => {
+                                                    Manufacturer::delete_by_uuid(d_uuid)
+                                                        .execute(&*d_pool)
+                                                        .await?;
+                                                }
+                                                TableWindow::Services => {
+                                                    Service::delete_by_uuid(d_uuid)
+                                                        .execute(&*d_pool)
+                                                        .await?;
+                                                }
+                                                TableWindow::Suppliers => {
+                                                    Supplier::delete_by_uuid(d_uuid)
+                                                        .execute(&*d_pool)
+                                                        .await?;
+                                                }
+                                            }
+                                            Ok(())
+                                        }),
+                                    ))
+                                } else {
+                                    ui.add_space(8.0);
+                                    self.delete_prompt = if ui.button("Cancel").clicked() {
+                                        DeletePrompt::None
+                                    } else {
+                                        DeletePrompt::Confirm((uuid, window))
+                                    }
+                                }
+                            }
+                            DeletePrompt::None => unreachable!(),
+                        };
+                    })
+                });
+        }
+
         self.windows
             .iter_mut()
             .map(|(window, (open, state))| {
@@ -62,6 +171,7 @@ impl MainView {
                 Window::new(window.as_str())
                     .open(open)
                     .resizable(true)
+                    .enabled(self.delete_prompt.is_none())
                     .scroll2([true; 2])
                     .show(ctx, |ui| match state {
                         WindowState::Loaded(window_data) => {
@@ -78,6 +188,7 @@ impl MainView {
                                         Size::initial(120.0),
                                         Size::initial(TIMESTAMP_WIDTH),
                                         Size::initial(TIMESTAMP_WIDTH),
+                                        Size::exact(BUTTON_WIDTH),
                                     ],
                                     &[
                                         "ID",
@@ -123,6 +234,14 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(format!("{}", person.meta.created));
                                             });
+                                            row.col(|ui| {
+                                                if ui.button("🗑").clicked() {
+                                                    self.delete_prompt = DeletePrompt::Confirm((
+                                                        person.uuid,
+                                                        *window,
+                                                    ));
+                                                }
+                                            });
                                         }
                                         None => {
                                             row.col(|ui| {
@@ -134,16 +253,24 @@ impl MainView {
                                 TableData::Positions { data } => Table::draw(
                                     ui,
                                     &[
+                                        Size::exact(ID_WIDTH),
                                         Size::exact(UUID_WIDTH),
                                         Size::initial(120.0),
                                         Size::initial(120.0),
                                         Size::initial(80.0),
                                         Size::exact(TIMESTAMP_WIDTH),
                                         Size::exact(TIMESTAMP_WIDTH),
+                                        Size::exact(BUTTON_WIDTH),
                                     ],
-                                    &["UUID", "Name", "Details", "Salary", "Updated", "Created"],
+                                    &[
+                                        "ID", "UUID", "Name", "Details", "Salary", "Updated",
+                                        "Created",
+                                    ],
                                     (data.len(), |index, mut row| match data.get(index) {
                                         Some(position) => {
+                                            row.col(|ui| {
+                                                ui.label(index.to_string());
+                                            });
                                             row.col(|ui| {
                                                 ui.label(format!("{}", position.uuid));
                                             });
@@ -169,6 +296,14 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(format!("{}", position.meta.created));
                                             });
+                                            row.col(|ui| {
+                                                if ui.button("🗑").clicked() {
+                                                    self.delete_prompt = DeletePrompt::Confirm((
+                                                        position.uuid,
+                                                        *window,
+                                                    ));
+                                                }
+                                            });
                                         }
                                         None => {
                                             row.col(|ui| {
@@ -180,13 +315,18 @@ impl MainView {
                                 TableData::Manufacturers { data } => Table::draw(
                                     ui,
                                     &[
+                                        Size::exact(ID_WIDTH),
                                         Size::exact(UUID_WIDTH),
                                         Size::initial(120.0),
                                         Size::exact(50.0),
+                                        Size::exact(BUTTON_WIDTH),
                                     ],
-                                    &["UUID", "Name", "Country"],
+                                    &["ID", "UUID", "Name", "Country"],
                                     (data.len(), |index, mut row| match data.get(index) {
                                         Some(manufacturer) => {
+                                            row.col(|ui| {
+                                                ui.label(index.to_string());
+                                            });
                                             row.col(|ui| {
                                                 ui.label(format!("{}", manufacturer.uuid));
                                             });
@@ -195,6 +335,14 @@ impl MainView {
                                             });
                                             row.col(|ui| {
                                                 ui.label(manufacturer.country.clone());
+                                            });
+                                            row.col(|ui| {
+                                                if ui.button("🗑").clicked() {
+                                                    self.delete_prompt = DeletePrompt::Confirm((
+                                                        manufacturer.uuid,
+                                                        *window,
+                                                    ));
+                                                }
                                             });
                                         }
                                         None => {
@@ -207,15 +355,20 @@ impl MainView {
                                 TableData::Services { data } => Table::draw(
                                     ui,
                                     &[
+                                        Size::exact(ID_WIDTH),
                                         Size::exact(UUID_WIDTH),
                                         Size::initial(120.0),
                                         Size::initial(120.0),
                                         Size::exact(TIMESTAMP_WIDTH),
                                         Size::exact(TIMESTAMP_WIDTH),
+                                        Size::exact(BUTTON_WIDTH),
                                     ],
-                                    &["UUID", "Name", "Description", "Updated", "Created"],
+                                    &["ID", "UUID", "Name", "Description", "Updated", "Created"],
                                     (data.len(), |index, mut row| match data.get(index) {
                                         Some(service) => {
+                                            row.col(|ui| {
+                                                ui.label(index.to_string());
+                                            });
                                             row.col(|ui| {
                                                 ui.label(format!("{}", service.uuid));
                                             });
@@ -235,6 +388,14 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(format!("{}", service.meta.created));
                                             });
+                                            row.col(|ui| {
+                                                if ui.button("🗑").clicked() {
+                                                    self.delete_prompt = DeletePrompt::Confirm((
+                                                        service.uuid,
+                                                        *window,
+                                                    ));
+                                                }
+                                            });
                                         }
                                         None => {
                                             row.col(|ui| {
@@ -246,16 +407,21 @@ impl MainView {
                                 TableData::Suppliers { data } => Table::draw(
                                     ui,
                                     &[
+                                        Size::exact(ID_WIDTH),
                                         Size::exact(UUID_WIDTH),
                                         Size::initial(120.0),
                                         Size::exact(235.0),
                                         Size::initial(120.0),
                                         Size::initial(210.0),
                                         Size::exact(COUNTRY_WIDTH),
+                                        Size::exact(BUTTON_WIDTH),
                                     ],
-                                    &["UUID", "Name", "IBAN", "Swift", "Address", "Country"],
+                                    &["ID", "UUID", "Name", "IBAN", "Swift", "Address", "Country"],
                                     (data.len(), |index, mut row| match data.get(index) {
                                         Some(supplier) => {
+                                            row.col(|ui| {
+                                                ui.label(index.to_string());
+                                            });
                                             row.col(|ui| {
                                                 ui.label(format!("{}", supplier.uuid));
                                             });
@@ -273,6 +439,14 @@ impl MainView {
                                             });
                                             row.col(|ui| {
                                                 ui.label(supplier.country.clone());
+                                            });
+                                            row.col(|ui| {
+                                                if ui.button("🗑").clicked() {
+                                                    self.delete_prompt = DeletePrompt::Confirm((
+                                                        supplier.uuid,
+                                                        *window,
+                                                    ));
+                                                }
                                             });
                                         }
                                         None => {
@@ -306,7 +480,7 @@ impl MainView {
                         }
                         WindowState::Error(msg) => {
                             ui.vertical_centered(|ui| {
-                                ui.collapsing("Error occurred while loading table", |ui| {
+                                ui.collapsing("An error occurred while loading table", |ui| {
                                     ui.label(msg.as_str());
                                 })
                             });
@@ -322,112 +496,19 @@ impl MainView {
     }
 }
 
-// -------------------------------------------------------------------------------------------------
-
-#[derive(Debug)]
-pub enum TableData {
-    People { data: Vec<Person> },
-    Positions { data: Vec<Position> },
-    Manufacturers { data: Vec<Manufacturer> },
-    Services { data: Vec<Service> },
-    Suppliers { data: Vec<Supplier> },
-}
-
-impl From<TableWindow> for TableData {
-    fn from(tabs: TableWindow) -> Self {
-        match tabs {
-            TableWindow::People => Self::People {
-                data: Config::default().gen_person(),
-            },
-            TableWindow::Positions => Self::Positions {
-                data: Config::default().gen_positions(),
-            },
-            TableWindow::Manufacturers => Self::Manufacturers {
-                data: Config::default().gen_manufacturer(),
-            },
-            TableWindow::Services => Self::Services {
-                data: Config::default().gen_service(),
-            },
-            TableWindow::Suppliers => Self::Suppliers {
-                data: Config::default().gen_supplier(),
-            },
-        }
-    }
-}
-
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
-pub enum TableWindow {
-    People,
-    Positions,
-    Manufacturers,
-    Services,
-    Suppliers,
-}
-
-impl TableWindow {
-    pub const ALL: &'static [Self] = &[
-        Self::People,
-        Self::Positions,
-        Self::Manufacturers,
-        Self::Services,
-        Self::Suppliers,
-    ];
-
-    pub fn all() -> WindowStorage {
-        let map = BTreeMap::from_iter(
-            Self::ALL
-                .iter()
-                .map(|window| (*window, (false, WindowState::None))),
-        );
-
-        map
-    }
-
-    pub fn as_str(&self) -> &str {
-        match self {
-            Self::People => "People",
-            Self::Positions => "Positions",
-            Self::Manufacturers => "Manufacturers",
-            Self::Services => "Services",
-            Self::Suppliers => "Suppliers",
-        }
-    }
-}
-
-pub enum WindowState {
+pub enum DeletePrompt {
     None,
+    Confirm((Uuid, TableWindow)),
+    Loading((TableWindow, Request<(), ()>)),
     Error(String),
-    Loading(Request<(), TableData>, TableWindow),
-    Loaded(TableData),
 }
 
-impl WindowState {
-    pub fn is_visible(&self) -> bool {
-        !matches!(self, Self::None)
+impl DeletePrompt {
+    pub fn is_none(&self) -> bool {
+        matches!(self, Self::None)
     }
 
-    pub fn load(runtime: &Runtime, pool: Pool, window: TableWindow) -> Self {
-        Self::Loading(
-            Request::simple(runtime, move || async move {
-                Ok(match window {
-                    TableWindow::People => TableData::People {
-                        data: Person::get_all().fetch_all(&*pool).await?,
-                    },
-                    TableWindow::Positions => TableData::Positions {
-                        data: Position::get_all().fetch_all(&*pool).await?,
-                    },
-                    TableWindow::Manufacturers => TableData::Manufacturers {
-                        data: Manufacturer::get_all().fetch_all(&*pool).await?,
-                    },
-                    TableWindow::Services => TableData::Services {
-                        data: Service::get_all().fetch_all(&*pool).await?,
-                    },
-                    TableWindow::Suppliers => TableData::Suppliers {
-                        data: Supplier::get_all().fetch_all(&*pool).await?,
-                    },
-                })
-            }),
-            window,
-        )
+    pub fn take(&mut self) -> Self {
+        replace(self, Self::None)
     }
 }

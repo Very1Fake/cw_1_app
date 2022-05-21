@@ -27,7 +27,7 @@ impl Phone {
 
     pub const CREATE: &'static str = r#"CREATE TABLE "Phone" (
     uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    person uuid NOT NULL REFERENCES "Person" ON DELETE restrict ON UPDATE cascade,
+    person uuid NOT NULL REFERENCES "Person" ON DELETE no action ON UPDATE cascade,
     imei text NOT NULL CHECK (length(imei) <= 17),
     wifi macaddr,
     bluetooth macaddr,

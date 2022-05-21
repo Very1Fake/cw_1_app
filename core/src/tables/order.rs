@@ -27,7 +27,7 @@ impl Order {
 
     pub const CREATE: &'static str = r#"CREATE TABLE "Order" (
     uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    client uuid NOT NULL REFERENCES "Person" ON DELETE restrict ON UPDATE cascade,
+    client uuid NOT NULL REFERENCES "Person" ON DELETE no action ON UPDATE cascade,
     phone uuid NOT NULL REFERENCES "Phone" ON DELETE restrict ON UPDATE cascade,
     serviceman uuid NOT NULL REFERENCES "Staff" ON DELETE restrict ON UPDATE cascade,
     shopman uuid NOT NULL REFERENCES "Staff" ON DELETE restrict ON UPDATE cascade,

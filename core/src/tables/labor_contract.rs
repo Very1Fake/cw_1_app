@@ -25,7 +25,7 @@ impl LaborContract {
 
     pub const CREATE: &'static str = r#"CREATE TABLE "LaborContract" (
     uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    person uuid NOT NULL REFERENCES "Person" ON DELETE restrict ON UPDATE cascade,
+    person uuid NOT NULL REFERENCES "Person" ON DELETE no action ON UPDATE cascade,
     passport char(10) NOT NULL UNIQUE,
     status "ContractStatus" NOT NULL DEFAULT 'Review',
     signed timestamptz,

@@ -142,7 +142,7 @@ impl SetupView {
                 ui.vertical_centered(|ui| {
                     if let Some(error) = &self.error {
                         ui.collapsing(
-                            RichText::new("Error Occurred")
+                            RichText::new("An error occurred")
                                 .heading()
                                 .color(Color32::RED),
                             |col| col.label(error),

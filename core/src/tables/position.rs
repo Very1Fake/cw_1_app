@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::{
     traits::Insertable,
     types::{metatime::MetaTime, AccountRole},
-    PgQueryAs,
+    PgQuery, PgQueryAs,
 };
 
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
@@ -86,6 +86,10 @@ impl Position {
             PgMoney::from_bigdecimal(salary, 2).unwrap(),
             MetaTime::default(),
         )
+    }
+
+    pub fn delete_by_uuid(uuid: Uuid) -> PgQuery {
+        query(r#"DELETE FROM "Position" WHERE uuid = $1"#).bind(uuid)
     }
 
     pub fn get_all() -> PgQueryAs<Self> {

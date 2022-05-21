@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgArguments, query, query::Query, query_as, FromRow, Postgres};
 use uuid::Uuid;
 
-use crate::{traits::Insertable, PgQueryAs};
+use crate::{traits::Insertable, PgQuery, PgQueryAs};
 
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Manufacturer {
@@ -39,6 +39,10 @@ impl Manufacturer {
 
     pub fn new_auto(name: String, country: String) -> Self {
         Self::new(Uuid::new_v4(), name, country)
+    }
+
+    pub fn delete_by_uuid(uuid: Uuid) -> PgQuery {
+        query(r#"DELETE FROM "Manufacturer" WHERE uuid = $1"#).bind(uuid)
     }
 
     pub fn get_all() -> PgQueryAs<Self> {

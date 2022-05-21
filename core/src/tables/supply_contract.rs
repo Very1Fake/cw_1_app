@@ -25,7 +25,7 @@ impl SupplyContract {
 
     pub const CREATE: &'static str = r#"CREATE TABLE "SupplyContract" (
     uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    supplier uuid NOT NULL REFERENCES "Supplier" ON DELETE restrict ON UPDATE cascade,
+    supplier uuid NOT NULL REFERENCES "Supplier" ON DELETE no action ON UPDATE cascade,
     manager uuid NOT NULL REFERENCES "Staff" ON DELETE restrict ON UPDATE cascade,
     status "ContractStatus" NOT NULL DEFAULT 'Review',
     signed timestamptz,

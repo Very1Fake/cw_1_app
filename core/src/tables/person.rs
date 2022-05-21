@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgArguments, query, query::Query, query_as, FromRow, Postgres};
 use uuid::Uuid;
 
-use crate::{traits::Insertable, types::metatime::MetaTime, PgQueryAs};
+use crate::{traits::Insertable, types::metatime::MetaTime, PgQuery, PgQueryAs};
 
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Person {
@@ -70,6 +70,10 @@ impl Person {
 
     pub fn get_by_uuid(uuid: Uuid) -> PgQueryAs<Self> {
         query_as(r#"SELECT * FROM "Person" WHERE uuid = $1"#).bind(uuid)
+    }
+
+    pub fn delete_by_uuid(uuid: Uuid) -> PgQuery {
+        query(r#"DELETE FROM "Person" WHERE uuid = $1"#).bind(uuid)
     }
 
     pub fn get_all() -> PgQueryAs<Self> {

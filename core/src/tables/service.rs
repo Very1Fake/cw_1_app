@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgArguments, query, query::Query, query_as, FromRow, Postgres};
 use uuid::Uuid;
 
-use crate::{traits::Insertable, types::metatime::MetaTime, PgQueryAs};
+use crate::{traits::Insertable, types::metatime::MetaTime, PgQuery, PgQueryAs};
 
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Service {
@@ -63,6 +63,10 @@ impl Service {
 
     pub fn new_auto(name: String, description: Option<String>) -> Self {
         Self::new(Uuid::new_v4(), name, description, MetaTime::default())
+    }
+
+    pub fn delete_by_uuid(uuid: Uuid) -> PgQuery {
+        query(r#"DELETE FROM "Service" WHERE uuid = $1"#).bind(uuid)
     }
 
     pub fn get_all() -> PgQueryAs<Self> {
