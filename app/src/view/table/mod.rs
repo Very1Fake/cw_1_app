@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use cw_core::{
     generator::Config,
     tables::{Manufacturer, Person, Position, Service, Supplier},
+    types::AccountRole,
 };
 use eframe::egui::{TextStyle, Ui};
 use egui_extras::{Size, TableBuilder, TableRow};
@@ -10,7 +11,7 @@ use tokio::runtime::Runtime;
 
 use crate::{model::request::Request, utils::Pool};
 
-pub type WindowStorage = BTreeMap<TableWindow, (bool, WindowState)>;
+pub type WindowStorage = BTreeMap<TableWindow, (bool, TableAccess, WindowState)>;
 
 pub const ID_WIDTH: f32 = 40.0;
 pub const UUID_WIDTH: f32 = 245.0;
@@ -99,14 +100,51 @@ impl TableWindow {
         Self::Suppliers,
     ];
 
-    pub fn all() -> WindowStorage {
-        let map = BTreeMap::from_iter(
-            Self::ALL
-                .iter()
-                .map(|window| (*window, (false, WindowState::None))),
-        );
+    pub fn all_by_role(role: AccountRole) -> WindowStorage {
+        let map = BTreeMap::from_iter(Self::ALL.iter().filter_map(|window| {
+            if let Some((access, _)) = window.allowed_roles().iter().find(|(access, t_role)| role == *t_role) {
+                Some((*window, (false, *access, WindowState::None)))
+            } else {
+                None
+            }
+        }));
 
         map
+    }
+
+    pub fn allowed_roles(&self) -> &[(TableAccess, AccountRole)] {
+        match self {
+            Self::People => &[
+                (TableAccess::Full, AccountRole::Admin),
+                (TableAccess::Edit, AccountRole::Accountant),
+                (TableAccess::View, AccountRole::HR),
+                (TableAccess::Create, AccountRole::Shopman),
+            ],
+            Self::Positions => &[
+                (TableAccess::Full, AccountRole::Admin),
+                (TableAccess::Edit, AccountRole::Accountant),
+                (TableAccess::Create, AccountRole::HR),
+            ],
+            Self::Manufacturers => &[
+                (TableAccess::Full, AccountRole::Admin),
+                (TableAccess::View, AccountRole::Accountant),
+                (TableAccess::Edit, AccountRole::Manager),
+                (TableAccess::Create, AccountRole::Serviceman),
+                (TableAccess::Create, AccountRole::WarehouseWorker),
+            ],
+            Self::Services => &[
+                (TableAccess::Full, AccountRole::Admin),
+                (TableAccess::View, AccountRole::Accountant),
+                (TableAccess::Edit, AccountRole::Manager),
+                (TableAccess::Edit, AccountRole::Serviceman),
+                (TableAccess::View, AccountRole::WarehouseWorker),
+            ],
+            Self::Suppliers => &[
+                (TableAccess::Full, AccountRole::Admin),
+                (TableAccess::Edit, AccountRole::Accountant),
+                (TableAccess::Edit, AccountRole::Manager),
+            ],
+        }
     }
 
     pub fn as_str(&self) -> &str {
@@ -156,4 +194,13 @@ impl WindowState {
             window,
         )
     }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
+pub enum TableAccess {
+    View = 0,
+    Create,
+    Delete,
+    Edit,
+    Full,
 }

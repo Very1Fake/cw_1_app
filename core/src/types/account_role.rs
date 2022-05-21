@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::traits::Recreatable;
 
-#[derive(Serialize, Deserialize, sqlx::Type, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, sqlx::Type, PartialEq, Clone, Copy, Debug)]
 #[sqlx(type_name = "AccountRole", rename_all = "PascalCase")]
 pub enum AccountRole {
     Admin,

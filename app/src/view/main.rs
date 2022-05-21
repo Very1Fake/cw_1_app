@@ -22,7 +22,7 @@ use crate::{
 
 use super::table::{
     Table, TableData, TableWindow, WindowState, WindowStorage, BUTTON_WIDTH, COUNTRY_WIDTH,
-    ID_WIDTH, TIMESTAMP_WIDTH, UUID_WIDTH,
+    ID_WIDTH, TIMESTAMP_WIDTH, UUID_WIDTH, TableAccess,
 };
 
 pub struct MainView {
@@ -33,9 +33,11 @@ pub struct MainView {
 
 impl MainView {
     pub fn new(user: User) -> Self {
+        let windows = TableWindow::all_by_role(user.account.role);
+
         Self {
             user,
-            windows: TableWindow::all(),
+            windows,
             delete_prompt: DeletePrompt::None,
         }
     }
@@ -43,7 +45,7 @@ impl MainView {
     pub fn update(&mut self, ctx: &Context, runtime: &Runtime, pool: Pool) {
         TopBottomPanel::top("main_tabs").show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
-                for (window, (open, state)) in &mut self.windows {
+                for (window, (open, _, state)) in &mut self.windows {
                     if ui.selectable_label(*open, window.as_str()).clicked() {
                         if *open {
                             *open = false;
@@ -84,7 +86,7 @@ impl MainView {
                                 self.delete_prompt = match request.peek(runtime).status.take() {
                                     RequestStatus::Finished(result) => match result {
                                         Ok(_) => {
-                                            self.windows.get_mut(&window).unwrap().1 =
+                                            self.windows.get_mut(&window).unwrap().2 =
                                                 WindowState::load(
                                                     runtime,
                                                     Arc::clone(&pool),
@@ -161,13 +163,13 @@ impl MainView {
 
         self.windows
             .iter_mut()
-            .map(|(window, (open, state))| {
+            .map(|(window, (open, access, state))| {
                 if *open != state.is_visible() && !*open {
                     *state = WindowState::None;
                 }
-                (window, (open, state))
+                (window, (open, access, state))
             })
-            .for_each(|(window, (open, state))| {
+            .for_each(|(window, (open, access, state))| {
                 Window::new(window.as_str())
                     .open(open)
                     .resizable(true)
@@ -234,7 +236,7 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(format!("{}", person.meta.created));
                                             });
-                                            row.col(|ui| {
+                                            row.col(|ui| if *access >= TableAccess::Delete {
                                                 if ui.button("🗑").clicked() {
                                                     self.delete_prompt = DeletePrompt::Confirm((
                                                         person.uuid,
@@ -296,7 +298,7 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(format!("{}", position.meta.created));
                                             });
-                                            row.col(|ui| {
+                                            row.col(|ui| if *access >= TableAccess::Delete {
                                                 if ui.button("🗑").clicked() {
                                                     self.delete_prompt = DeletePrompt::Confirm((
                                                         position.uuid,
@@ -336,7 +338,7 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(manufacturer.country.clone());
                                             });
-                                            row.col(|ui| {
+                                            row.col(|ui| if *access >= TableAccess::Delete {
                                                 if ui.button("🗑").clicked() {
                                                     self.delete_prompt = DeletePrompt::Confirm((
                                                         manufacturer.uuid,
@@ -388,7 +390,7 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(format!("{}", service.meta.created));
                                             });
-                                            row.col(|ui| {
+                                            row.col(|ui| if *access >= TableAccess::Delete {
                                                 if ui.button("🗑").clicked() {
                                                     self.delete_prompt = DeletePrompt::Confirm((
                                                         service.uuid,
@@ -440,7 +442,7 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(supplier.country.clone());
                                             });
-                                            row.col(|ui| {
+                                            row.col(|ui| if *access >= TableAccess::Delete {
                                                 if ui.button("🗑").clicked() {
                                                     self.delete_prompt = DeletePrompt::Confirm((
                                                         supplier.uuid,
