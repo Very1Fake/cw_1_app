@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use cw_core::sqlx::PgPool;
 use eframe::{
@@ -6,7 +6,7 @@ use eframe::{
     emath::{Align2, Vec2},
     epaint::Color32,
 };
-use tokio::{runtime::Runtime, sync::mpsc::channel, time::sleep};
+use tokio::{runtime::Runtime, sync::mpsc::channel};
 
 use crate::{
     model::{
@@ -69,8 +69,6 @@ impl SetupView {
                 tx.send(String::from("Connecting")).await?;
                 let pool = open_pool(uri, ssl_mode).await?;
                 tx.send(String::from("Connected")).await?;
-                sleep(Duration::from_secs(1)).await;
-
                 Ok(Arc::new(pool))
             }),
             rx,

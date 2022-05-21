@@ -1,5 +1,3 @@
-// use std::mem::discriminant;
-
 use std::sync::Arc;
 
 use cw_core::{
@@ -7,8 +5,9 @@ use cw_core::{
     tables::{Manufacturer, Person, Position, Service, Supplier},
 };
 use eframe::egui::{CentralPanel, Context, TopBottomPanel};
-use egui_extras::{Size, TableBuilder};
+use egui_extras::Size;
 use tokio::runtime::Runtime;
+use tracing::warn;
 
 use crate::{
     model::{
@@ -18,9 +17,7 @@ use crate::{
     utils::Pool,
 };
 
-pub const UUID_WIDTH: f32 = 240.0;
-pub const COUNTRY_WIDTH: f32 = 60.0;
-pub const TIMESTAMP_WIDTH: f32 = 190.0;
+use super::table::{Table, COUNTRY_WIDTH, ID_WIDTH, TIMESTAMP_WIDTH, UUID_WIDTH};
 
 pub struct MainView {
     user: User,
@@ -29,6 +26,7 @@ pub struct MainView {
 
 impl MainView {
     pub fn new(user: User) -> Self {
+        warn!("Initialized main!");
         Self {
             user,
             tab: TabHandler::None,
@@ -60,285 +58,234 @@ impl MainView {
             TabHandler::Loaded(tab) => {
                 CentralPanel::default().show(ctx, |ui| {
                     match tab {
-                        Tab::People { data } => TableBuilder::new(ui)
-                            .striped(true)
-                            .resizable(true)
-                            .column(Size::exact(UUID_WIDTH))
-                            .column(Size::initial(120.0))
-                            .column(Size::initial(120.0))
-                            .column(Size::initial(120.0))
-                            .column(Size::initial(120.0))
-                            .column(Size::initial(120.0))
-                            .column(Size::initial(TIMESTAMP_WIDTH))
-                            .column(Size::initial(TIMESTAMP_WIDTH))
-                            .header(20.0, |mut header| {
-                                header.col(|ui| {
-                                    ui.heading("UUID");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("First Name");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Middle Name");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Last Name");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Email");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Phone");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Updated");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Created");
-                                });
-                            })
-                            .body(|mut body| {
-                                for person in data {
-                                    body.row(24.0, |mut row| {
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", person.uuid));
+                        Tab::People { data } => Table::draw(
+                            ui,
+                            |builder| {
+                                builder
+                                    .column(Size::exact(ID_WIDTH))
+                                    .column(Size::exact(UUID_WIDTH))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::initial(TIMESTAMP_WIDTH))
+                                    .column(Size::initial(TIMESTAMP_WIDTH))
+                            },
+                            &[
+                                "ID",
+                                "UUID",
+                                "First Name",
+                                "Middle Name",
+                                "Last Name",
+                                "Email",
+                                "Phone",
+                                "Updated",
+                                "Created",
+                            ],
+                            (data.len(), |index, mut row| match data.get(index) {
+                                Some(person) => {
+                                    row.col(|ui| {
+                                        ui.label(index.to_string());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", person.uuid));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(person.first_name.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(if person.middle_name.is_some() {
+                                            person.middle_name.clone().unwrap()
+                                        } else {
+                                            String::new()
                                         });
-                                        row.col(|ui| {
-                                            ui.label(person.first_name.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(
-                                                if let Some(name) = person.middle_name.clone() {
-                                                    name
-                                                } else {
-                                                    String::new()
-                                                },
-                                            );
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(person.last_name.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(person.email.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(person.phone.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", person.meta.updated));
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", person.meta.created));
-                                        });
-                                    })
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(person.last_name.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(person.email.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(person.phone.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", person.meta.updated));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", person.meta.created));
+                                    });
+                                }
+                                None => {
+                                    row.col(|ui| {
+                                        ui.label("Error while indexing");
+                                    });
                                 }
                             }),
-                        Tab::Positions { data } => TableBuilder::new(ui)
-                            .striped(true)
-                            .resizable(true)
-                            .column(Size::exact(UUID_WIDTH))
-                            .column(Size::initial(120.0))
-                            .column(Size::initial(120.0))
-                            .column(Size::initial(80.0))
-                            .column(Size::exact(TIMESTAMP_WIDTH))
-                            .column(Size::exact(TIMESTAMP_WIDTH))
-                            .header(20.0, |mut header| {
-                                header.col(|ui| {
-                                    ui.heading("UUID");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Name");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Details");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Salary");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Updated");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Created");
-                                });
-                            })
-                            .body(|mut body| {
-                                for position in data {
-                                    body.row(24.0, |mut row| {
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", position.uuid));
+                        ),
+                        Tab::Positions { data } => Table::draw(
+                            ui,
+                            |builder| {
+                                builder
+                                    .column(Size::exact(UUID_WIDTH))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::initial(80.0))
+                                    .column(Size::exact(TIMESTAMP_WIDTH))
+                                    .column(Size::exact(TIMESTAMP_WIDTH))
+                            },
+                            &["UUID", "Name", "Details", "Salary", "Updated", "Created"],
+                            (data.len(), |index, mut row| match data.get(index) {
+                                Some(position) => {
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", position.uuid));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(position.name.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(if position.details.is_some() {
+                                            position.details.clone().unwrap()
+                                        } else {
+                                            String::new()
                                         });
-                                        row.col(|ui| {
-                                            ui.label(position.name.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(
-                                                if let Some(name) = position.details.clone() {
-                                                    name
-                                                } else {
-                                                    String::new()
-                                                },
-                                            );
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(format!("{}₽.", position.salary.to_bigdecimal(2)));
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", position.meta.updated));
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", position.meta.created));
-                                        });
-                                    })
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{}₽.", position.salary.to_bigdecimal(2)));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", position.meta.updated));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", position.meta.created));
+                                    });
+                                }
+                                None => {
+                                    row.col(|ui| {
+                                        ui.label("Error while indexing");
+                                    });
                                 }
                             }),
-                        Tab::Manufacturers { data } => TableBuilder::new(ui)
-                            .striped(true)
-                            .resizable(true)
-                            .column(Size::exact(UUID_WIDTH))
-                            .column(Size::initial(120.0))
-                            .column(Size::exact(50.0))
-                            .header(20.0, |mut header| {
-                                header.col(|ui| {
-                                    ui.heading("UUID");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Name");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Country");
-                                });
-                            })
-                            .body(|mut body| {
-                                for manufacturer in data {
-                                    body.row(24.0, |mut row| {
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", manufacturer.uuid));
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(manufacturer.name.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(manufacturer.country.clone());
-                                        });
-                                    })
+                        ),
+                        Tab::Manufacturers { data } => Table::draw(
+                            ui,
+                            |builder| {
+                                builder
+                                    .column(Size::exact(UUID_WIDTH))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::exact(50.0))
+                            },
+                            &["UUID", "Name", "Country"],
+                            (data.len(), |index, mut row| match data.get(index) {
+                                Some(manufacturer) => {
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", manufacturer.uuid));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(manufacturer.name.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(manufacturer.country.clone());
+                                    });
+                                }
+                                None => {
+                                    row.col(|ui| {
+                                        ui.label("Error while indexing");
+                                    });
                                 }
                             }),
-                        Tab::Services { data } => TableBuilder::new(ui)
-                            .striped(true)
-                            .resizable(true)
-                            .column(Size::exact(UUID_WIDTH))
-                            .column(Size::initial(120.0))
-                            .column(Size::initial(120.0))
-                            .column(Size::exact(TIMESTAMP_WIDTH))
-                            .column(Size::exact(TIMESTAMP_WIDTH))
-                            .header(20.0, |mut header| {
-                                header.col(|ui| {
-                                    ui.heading("UUID");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Name");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Description");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Updated");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Created");
-                                });
-                            })
-                            .body(|mut body| {
-                                for service in data {
-                                    body.row(24.0, |mut row| {
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", service.uuid));
+                        ),
+                        Tab::Services { data } => Table::draw(
+                            ui,
+                            |builder| {
+                                builder
+                                    .column(Size::exact(UUID_WIDTH))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::exact(TIMESTAMP_WIDTH))
+                                    .column(Size::exact(TIMESTAMP_WIDTH))
+                            },
+                            &["UUID", "Name", "Description", "Updated", "Created"],
+                            (data.len(), |index, mut row| match data.get(index) {
+                                Some(service) => {
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", service.uuid));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(service.name.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(if service.description.is_some() {
+                                            service.description.clone().unwrap()
+                                        } else {
+                                            String::new()
                                         });
-                                        row.col(|ui| {
-                                            ui.label(service.name.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(
-                                                if let Some(description) =
-                                                    service.description.clone()
-                                                {
-                                                    description
-                                                } else {
-                                                    String::new()
-                                                },
-                                            );
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", service.meta.created));
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", service.meta.created));
-                                        });
-                                    })
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", service.meta.created));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", service.meta.created));
+                                    });
+                                }
+                                None => {
+                                    row.col(|ui| {
+                                        ui.label("Error while indexing");
+                                    });
                                 }
                             }),
-                        Tab::Suppliers { data } => TableBuilder::new(ui)
-                            .striped(true)
-                            .resizable(true)
-                            .column(Size::exact(UUID_WIDTH))
-                            .column(Size::initial(120.0))
-                            .column(Size::exact(235.0))
-                            .column(Size::initial(120.0))
-                            .column(Size::initial(210.0))
-                            .column(Size::exact(COUNTRY_WIDTH))
-                            .header(20.0, |mut header| {
-                                header.col(|ui| {
-                                    ui.heading("UUID");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Name");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("IBAN");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Swift");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Address");
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Country");
-                                }); // TODO: Add MetaTime
-                            })
-                            .body(|mut body| {
-                                for supplier in data {
-                                    body.row(24.0, |mut row| {
-                                        row.col(|ui| {
-                                            ui.label(format!("{}", supplier.uuid));
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(supplier.name.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(supplier.iban.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(supplier.swift.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(supplier.address.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(supplier.country.clone());
-                                        });
-                                    })
+                        ),
+                        Tab::Suppliers { data } => Table::draw(
+                            ui,
+                            |builder| {
+                                builder
+                                    .column(Size::exact(UUID_WIDTH))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::exact(235.0))
+                                    .column(Size::initial(120.0))
+                                    .column(Size::initial(210.0))
+                                    .column(Size::exact(COUNTRY_WIDTH))
+                            },
+                            &["UUID", "Name", "IBAN", "Swift", "Address", "Country"],
+                            (data.len(), |index, mut row| match data.get(index) {
+                                Some(supplier) => {
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", supplier.uuid));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(supplier.name.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(supplier.iban.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(supplier.swift.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(supplier.address.clone());
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(supplier.country.clone());
+                                    });
+                                }
+                                None => {
+                                    row.col(|ui| {
+                                        ui.label("Error while indexing");
+                                    });
                                 }
                             }),
+                        ),
                     };
                 });
             }
             TabHandler::Loading(request, tab) => match request.peek(runtime).status.take() {
-                RequestStatus::Finished(result) => self.tab = match result {
-                    Ok(tab) => TabHandler::Loaded(tab),
-                    Err(err) => TabHandler::Error(format!("{err}")),
-                },
+                RequestStatus::Finished(result) => {
+                    self.tab = match result {
+                        Ok(tab) => TabHandler::Loaded(tab),
+                        Err(err) => TabHandler::Error(format!("{err}")),
+                    }
+                }
                 _ => {
                     CentralPanel::default().show(ctx, |ui| {
                         ui.vertical_centered(|ui| {
@@ -350,11 +297,13 @@ impl MainView {
                 }
             },
             TabHandler::Error(msg) => {
-                CentralPanel::default().show(ctx, |ui| ui.vertical_centered(|ui| {
-                    ui.collapsing("Error occurred while loading table", |ui| {
-                        ui.label(msg.as_str());
+                CentralPanel::default().show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.collapsing("Error occurred while loading table", |ui| {
+                            ui.label(msg.as_str());
+                        })
                     })
-                }));
+                });
             }
             TabHandler::None => {
                 CentralPanel::default().show(ctx, |ui| {
@@ -380,10 +329,6 @@ pub enum Tab {
 }
 
 impl Tab {
-    // pub fn equal(lhs: &Self, rhs: &Self) -> bool {
-    //     discriminant(lhs) == discriminant(rhs)
-    // }
-
     pub fn as_tabs(&self) -> Tabs {
         match self {
             Self::People { .. } => Tabs::People,
@@ -444,10 +389,6 @@ impl Tabs {
             Self::Suppliers => "Suppliers",
         }
     }
-
-    // pub fn equal(lhs: &Self, rhs: &Self) -> bool {
-    //     discriminant(lhs) == discriminant(rhs)
-    // }
 }
 
 pub enum TabHandler {
@@ -460,7 +401,7 @@ pub enum TabHandler {
 impl TabHandler {
     pub fn load(runtime: &Runtime, pool: Pool, tab: Tabs) -> Self {
         Self::Loading(
-            Request::simple(runtime.spawn(async move {
+            Request::simple(runtime, move || async move {
                 Ok(match tab {
                     Tabs::People => Tab::People {
                         data: Person::get_all().fetch_all(&*pool).await?,
@@ -478,7 +419,7 @@ impl TabHandler {
                         data: Supplier::get_all().fetch_all(&*pool).await?,
                     },
                 })
-            })),
+            }),
             tab,
         )
     }

@@ -5,7 +5,7 @@ use cw_core::{
     tables::{Account, LaborContract, Person, Staff},
 };
 use eframe::{
-    egui::{Button, Checkbox, Context, RichText, TextEdit, TextStyle, Window},
+    egui::{Context, RichText, TextEdit, TextStyle, Window},
     emath::{Align2, Vec2},
     epaint::Color32,
 };
@@ -58,7 +58,7 @@ impl AuthView {
     fn start_processing(&mut self, runtime: &Runtime, pool: Pool) {
         let login = self.login_input.clone();
         let password = self.password_input.clone();
-        self.processing = Some(Request::simple(runtime.spawn(async move {
+        self.processing = Some(Request::simple(runtime, || async move {
             let account = match Account::get_by_login(login).fetch_one(&*pool).await {
                 Ok(account) => account,
                 Err(Error::RowNotFound) => bail!("Account not found"),
@@ -91,7 +91,7 @@ impl AuthView {
                     bail!(err)
                 }
             }
-        })))
+        }))
     }
 
     pub fn update(
@@ -101,8 +101,6 @@ impl AuthView {
         runtime: &Runtime,
         pool: Pool,
     ) -> ViewResponse<User> {
-        let enabled = self.processing.is_none();
-
         Window::new("Authorization")
             .resizable(false)
             .collapsible(false)
@@ -120,26 +118,33 @@ impl AuthView {
                     }
 
                     ui.add_space(8.0);
-                    ui.add(
-                        TextEdit::singleline(&mut self.login_input)
-                            .font(TextStyle::Heading)
-                            .hint_text("Login")
-                            .interactive(enabled),
-                    );
-                    ui.add_space(8.0);
-                    ui.add(
-                        TextEdit::singleline(&mut self.password_input)
-                            .font(TextStyle::Heading)
-                            .hint_text("Password")
-                            .password(true)
-                            .interactive(enabled),
-                    );
-                    ui.add_space(8.0);
-                    ui.add_enabled(enabled, Checkbox::new(&mut self.remember_me, "Remember me"));
-                    ui.add_space(16.0);
-                    if ui.add_enabled(enabled, Button::new("Sign In")).clicked() {
-                        self.start_processing(runtime, pool)
-                    }
+
+                    ui.add_enabled_ui(self.processing.is_none(), |ui| {
+                        ui.add(
+                            TextEdit::singleline(&mut self.login_input)
+                                .font(TextStyle::Heading)
+                                .hint_text("Login"),
+                        );
+                        ui.add_space(8.0);
+                        ui.add(
+                            TextEdit::singleline(&mut self.password_input)
+                                .font(TextStyle::Heading)
+                                .hint_text("Password")
+                                .password(true),
+                        );
+                        ui.add_space(8.0);
+                        ui.checkbox(&mut self.remember_me, "Remember me");
+
+                        if self.processing.is_some() {
+                            ui.add_space(8.0);
+                            ui.spinner();
+                        } else {
+                            ui.add_space(16.0);
+                            if ui.button("Sign In").clicked() {
+                                self.start_processing(runtime, pool)
+                            }
+                        }
+                    });
                 });
             });
             

@@ -11,6 +11,7 @@ use self::setup::SetupView;
 pub mod auth;
 pub mod main;
 pub mod setup;
+pub mod table;
 
 pub enum AppViews {
     Auth(AuthView),

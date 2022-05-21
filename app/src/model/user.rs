@@ -4,7 +4,7 @@ use cw_core::{
     uuid::Uuid,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct User {
     pub account: Account,
     pub staff: Staff,
