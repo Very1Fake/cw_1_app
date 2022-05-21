@@ -147,8 +147,7 @@ impl AuthView {
                     });
                 });
             });
-            
-        
+
         if let Some(mut request) = self.processing.take() {
             if let RequestStatus::Finished(result) = request.peek(runtime).status.take() {
                 match result {
@@ -159,7 +158,7 @@ impl AuthView {
                                 password: self.password_input.clone(),
                             })
                         };
-                        return ViewResponse::next(user, self.is_reactive)
+                        return ViewResponse::next(user, self.is_reactive);
                     }
                     Err(err) => {
                         self.error = Some(format!("{err}"));

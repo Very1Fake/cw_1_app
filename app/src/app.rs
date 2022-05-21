@@ -8,7 +8,11 @@ use eframe::{
 use tokio::runtime::Runtime;
 use tracing::trace;
 
-use crate::{model::config::Config, utils::Pool, view::{AppViews, ViewResponse}};
+use crate::{
+    model::config::Config,
+    utils::Pool,
+    view::{AppViews, ViewResponse},
+};
 
 pub struct App {
     view: AppViews,
@@ -79,7 +83,9 @@ impl EApp for App {
                 }
             }
             AppViews::Setup(view) => {
-                if let ViewResponse::Next((pool, _)) = view.update(ctx, &mut self.config, &self.runtime) {
+                if let ViewResponse::Next((pool, _)) =
+                    view.update(ctx, &mut self.config, &self.runtime)
+                {
                     self.pool = Some(pool);
                     self.view = AppViews::auth_reactive(
                         &self.config,

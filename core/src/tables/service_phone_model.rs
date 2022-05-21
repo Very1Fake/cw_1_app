@@ -1,5 +1,11 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::{PgArguments, types::PgMoney}, query, query::Query, types::BigDecimal, Postgres, FromRow};
+use sqlx::{
+    postgres::{types::PgMoney, PgArguments},
+    query,
+    query::Query,
+    types::BigDecimal,
+    FromRow, Postgres,
+};
 use uuid::Uuid;
 
 use crate::{traits::Insertable, types::MetaTime};

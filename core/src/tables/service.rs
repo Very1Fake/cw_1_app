@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, Postgres, query_as, FromRow};
+use sqlx::{postgres::PgArguments, query, query::Query, query_as, FromRow, Postgres};
 use uuid::Uuid;
 
 use crate::{traits::Insertable, types::metatime::MetaTime, PgQueryAs};

@@ -36,4 +36,3 @@ fn main() -> Result<()> {
 
 // TODO: Secure authorization process
 // TODO: Complex queries/forms
-

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgArguments, query, query::Query, Postgres, FromRow};
+use sqlx::{postgres::PgArguments, query, query::Query, FromRow, Postgres};
 use uuid::Uuid;
 
 use crate::{
