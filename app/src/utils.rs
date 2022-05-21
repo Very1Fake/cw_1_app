@@ -12,13 +12,13 @@ use crate::model::config::SslMode;
 
 pub type Pool = Arc<PgPool>;
 
-pub async fn open_pool(uri: String, ssl_mode: SslMode) -> Result<PgPool, Error> {
+pub async fn open_pool(uri: String, ssl_mode: SslMode, bound: (u32, u32)) -> Result<PgPool, Error> {
     let options: PgConnectOptions = uri.parse()?;
 
     // Connecting to database
     let pool = PoolOptions::new()
-        .min_connections(1)
-        .max_connections(4)
+        .min_connections(bound.0)
+        .max_connections(bound.1)
         .connect_timeout(Duration::from_secs(4))
         .connect_with(options.application_name("CW-CLI").ssl_mode(match ssl_mode {
             SslMode::Disable => PgSslMode::Disable,

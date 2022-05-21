@@ -36,6 +36,10 @@ pub struct AuthView {
 }
 
 impl AuthView {
+    fn is_reactive(&self) -> bool {
+        !self.login_input.is_empty() && !self.password_input.is_empty()
+    }
+
     pub fn from_config(config: &Config) -> Self {
         let mut this = Self::default();
 
@@ -50,8 +54,13 @@ impl AuthView {
 
     pub fn reactive(config: &Config, runtime: &Runtime, pool: Pool) -> Self {
         let mut this = Self::from_config(config);
-        this.is_reactive = true;
-        this.start_processing(runtime, pool);
+
+        // Check for empty inputs
+        if this.is_reactive() {
+            this.is_reactive = true;
+            this.start_processing(runtime, pool);
+        }
+
         this
     }
 

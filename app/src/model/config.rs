@@ -54,7 +54,11 @@ impl Config {
             }
 
             to_writer(
-                File::options().write(true).create(true).open(CONFIG_PATH)?,
+                File::options()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(CONFIG_PATH)?,
                 self,
             )?;
         }
@@ -63,7 +67,7 @@ impl Config {
     }
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Default, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Debug)]
 pub struct Connection {
     pub host: String,
     pub user: String,
@@ -71,6 +75,24 @@ pub struct Connection {
     pub database: String,
     #[serde(default)]
     pub ssl_mode: SslMode,
+    #[serde(default)]
+    pub min_pool: u32,
+    #[serde(default)]
+    pub max_pool: u32,
+}
+
+impl Default for Connection {
+    fn default() -> Self {
+        Self {
+            host: Default::default(),
+            user: Default::default(),
+            password: Default::default(),
+            database: Default::default(),
+            ssl_mode: Default::default(),
+            min_pool: 1,
+            max_pool: 16,
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Clone, Copy, Debug)]
