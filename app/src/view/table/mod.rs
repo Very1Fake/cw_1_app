@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
 use cw_core::{
-    generator::Config,
     tables::{Manufacturer, Person, Position, Service, Supplier},
     types::AccountRole,
+    views::{ComponentBeautified, PhoneBeautified},
 };
 use eframe::egui::{TextStyle, Ui};
 use egui_extras::{Size, TableBuilder, TableRow};
@@ -58,28 +58,8 @@ pub enum TableData {
     Manufacturers { data: Vec<Manufacturer> },
     Services { data: Vec<Service> },
     Suppliers { data: Vec<Supplier> },
-}
-
-impl From<TableWindow> for TableData {
-    fn from(tabs: TableWindow) -> Self {
-        match tabs {
-            TableWindow::People => Self::People {
-                data: Config::default().gen_person(),
-            },
-            TableWindow::Positions => Self::Positions {
-                data: Config::default().gen_positions(),
-            },
-            TableWindow::Manufacturers => Self::Manufacturers {
-                data: Config::default().gen_manufacturer(),
-            },
-            TableWindow::Services => Self::Services {
-                data: Config::default().gen_service(),
-            },
-            TableWindow::Suppliers => Self::Suppliers {
-                data: Config::default().gen_supplier(),
-            },
-        }
-    }
+    Phones { data: Vec<PhoneBeautified> },
+    Components { data: Vec<ComponentBeautified> },
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
@@ -89,6 +69,8 @@ pub enum TableWindow {
     Manufacturers,
     Services,
     Suppliers,
+    Phones,
+    Components,
 }
 
 impl TableWindow {
@@ -98,11 +80,17 @@ impl TableWindow {
         Self::Manufacturers,
         Self::Services,
         Self::Suppliers,
+        Self::Phones,
+        Self::Components,
     ];
 
     pub fn all_by_role(role: AccountRole) -> WindowStorage {
         let map = BTreeMap::from_iter(Self::ALL.iter().filter_map(|window| {
-            if let Some((access, _)) = window.allowed_roles().iter().find(|(access, t_role)| role == *t_role) {
+            if let Some((access, _)) = window
+                .allowed_roles()
+                .iter()
+                .find(|(_, t_role)| role == *t_role)
+            {
                 Some((*window, (false, *access, WindowState::None)))
             } else {
                 None
@@ -144,6 +132,19 @@ impl TableWindow {
                 (TableAccess::Edit, AccountRole::Accountant),
                 (TableAccess::Edit, AccountRole::Manager),
             ],
+            Self::Phones => &[
+                (TableAccess::Full, AccountRole::Admin),
+                (TableAccess::Edit, AccountRole::Manager),
+                (TableAccess::Edit, AccountRole::Serviceman),
+                (TableAccess::Create, AccountRole::Shopman),
+                (TableAccess::View, AccountRole::WarehouseWorker),
+            ],
+            Self::Components => &[
+                (TableAccess::Full, AccountRole::Admin),
+                (TableAccess::Edit, AccountRole::Manager),
+                (TableAccess::Edit, AccountRole::Serviceman),
+                (TableAccess::Edit, AccountRole::WarehouseWorker),
+            ],
         }
     }
 
@@ -154,6 +155,8 @@ impl TableWindow {
             Self::Manufacturers => "Manufacturers",
             Self::Services => "Services",
             Self::Suppliers => "Suppliers",
+            Self::Phones => "Phones",
+            Self::Components => "Components",
         }
     }
 }
@@ -188,6 +191,12 @@ impl WindowState {
                     },
                     TableWindow::Suppliers => TableData::Suppliers {
                         data: Supplier::get_all().fetch_all(&*pool).await?,
+                    },
+                    TableWindow::Phones => TableData::Phones {
+                        data: PhoneBeautified::get_all().fetch_all(&*pool).await?,
+                    },
+                    TableWindow::Components => TableData::Components {
+                        data: ComponentBeautified::get_all().fetch_all(&*pool).await?,
                     },
                 })
             }),

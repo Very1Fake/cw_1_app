@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgArguments, query, query::Query, FromRow, Postgres};
 use uuid::Uuid;
 
-use crate::traits::Insertable;
+use crate::{traits::Insertable, PgQuery};
 
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
 pub struct Component {
@@ -170,6 +170,10 @@ impl Component {
 
     pub fn new_auto(name: String, kind: Uuid, model: Uuid, manufacturer: Uuid) -> Self {
         Self::new(Uuid::new_v4(), name, kind, model, manufacturer)
+    }
+
+    pub fn delete_by_uuid(uuid: Uuid) -> PgQuery {
+        query(r#"DELETE FROM "Component" WHERE uuid = $1"#).bind(uuid)
     }
 }
 

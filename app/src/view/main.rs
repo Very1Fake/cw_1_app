@@ -1,7 +1,7 @@
 use std::{mem::replace, sync::Arc};
 
 use cw_core::{
-    tables::{Manufacturer, Person, Position, Service, Supplier},
+    tables::{Component, Manufacturer, Person, Phone, Position, Service, Supplier},
     uuid::Uuid,
 };
 use eframe::{
@@ -21,8 +21,8 @@ use crate::{
 };
 
 use super::table::{
-    Table, TableData, TableWindow, WindowState, WindowStorage, BUTTON_WIDTH, COUNTRY_WIDTH,
-    ID_WIDTH, TIMESTAMP_WIDTH, UUID_WIDTH, TableAccess,
+    Table, TableAccess, TableData, TableWindow, WindowState, WindowStorage, BUTTON_WIDTH,
+    COUNTRY_WIDTH, ID_WIDTH, TIMESTAMP_WIDTH, UUID_WIDTH,
 };
 
 pub struct MainView {
@@ -142,6 +142,16 @@ impl MainView {
                                                         .execute(&*d_pool)
                                                         .await?;
                                                 }
+                                                TableWindow::Phones => {
+                                                    Phone::delete_by_uuid(d_uuid)
+                                                        .execute(&*d_pool)
+                                                        .await?;
+                                                }
+                                                TableWindow::Components => {
+                                                    Component::delete_by_uuid(d_uuid)
+                                                        .execute(&*d_pool)
+                                                        .await?;
+                                                }
                                             }
                                             Ok(())
                                         }),
@@ -188,8 +198,8 @@ impl MainView {
                                         Size::initial(120.0),
                                         Size::initial(120.0),
                                         Size::initial(120.0),
-                                        Size::initial(TIMESTAMP_WIDTH),
-                                        Size::initial(TIMESTAMP_WIDTH),
+                                        Size::exact(TIMESTAMP_WIDTH),
+                                        Size::exact(TIMESTAMP_WIDTH),
                                         Size::exact(BUTTON_WIDTH),
                                     ],
                                     &[
@@ -236,12 +246,13 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(format!("{}", person.meta.created));
                                             });
-                                            row.col(|ui| if *access >= TableAccess::Delete {
-                                                if ui.button("🗑").clicked() {
-                                                    self.delete_prompt = DeletePrompt::Confirm((
-                                                        person.uuid,
-                                                        *window,
-                                                    ));
+                                            row.col(|ui| {
+                                                if *access >= TableAccess::Delete {
+                                                    if ui.button("🗑").clicked() {
+                                                        self.delete_prompt = DeletePrompt::Confirm(
+                                                            (person.uuid, *window),
+                                                        );
+                                                    }
                                                 }
                                             });
                                         }
@@ -298,12 +309,13 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(format!("{}", position.meta.created));
                                             });
-                                            row.col(|ui| if *access >= TableAccess::Delete {
-                                                if ui.button("🗑").clicked() {
-                                                    self.delete_prompt = DeletePrompt::Confirm((
-                                                        position.uuid,
-                                                        *window,
-                                                    ));
+                                            row.col(|ui| {
+                                                if *access >= TableAccess::Delete {
+                                                    if ui.button("🗑").clicked() {
+                                                        self.delete_prompt = DeletePrompt::Confirm(
+                                                            (position.uuid, *window),
+                                                        );
+                                                    }
                                                 }
                                             });
                                         }
@@ -338,12 +350,13 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(manufacturer.country.clone());
                                             });
-                                            row.col(|ui| if *access >= TableAccess::Delete {
-                                                if ui.button("🗑").clicked() {
-                                                    self.delete_prompt = DeletePrompt::Confirm((
-                                                        manufacturer.uuid,
-                                                        *window,
-                                                    ));
+                                            row.col(|ui| {
+                                                if *access >= TableAccess::Delete {
+                                                    if ui.button("🗑").clicked() {
+                                                        self.delete_prompt = DeletePrompt::Confirm(
+                                                            (manufacturer.uuid, *window),
+                                                        );
+                                                    }
                                                 }
                                             });
                                         }
@@ -390,12 +403,13 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(format!("{}", service.meta.created));
                                             });
-                                            row.col(|ui| if *access >= TableAccess::Delete {
-                                                if ui.button("🗑").clicked() {
-                                                    self.delete_prompt = DeletePrompt::Confirm((
-                                                        service.uuid,
-                                                        *window,
-                                                    ));
+                                            row.col(|ui| {
+                                                if *access >= TableAccess::Delete {
+                                                    if ui.button("🗑").clicked() {
+                                                        self.delete_prompt = DeletePrompt::Confirm(
+                                                            (service.uuid, *window),
+                                                        );
+                                                    }
                                                 }
                                             });
                                         }
@@ -442,12 +456,149 @@ impl MainView {
                                             row.col(|ui| {
                                                 ui.label(supplier.country.clone());
                                             });
-                                            row.col(|ui| if *access >= TableAccess::Delete {
-                                                if ui.button("🗑").clicked() {
-                                                    self.delete_prompt = DeletePrompt::Confirm((
-                                                        supplier.uuid,
-                                                        *window,
-                                                    ));
+                                            row.col(|ui| {
+                                                if *access >= TableAccess::Delete {
+                                                    if ui.button("🗑").clicked() {
+                                                        self.delete_prompt = DeletePrompt::Confirm(
+                                                            (supplier.uuid, *window),
+                                                        );
+                                                    }
+                                                }
+                                            });
+                                        }
+                                        None => {
+                                            row.col(|ui| {
+                                                ui.label("Error while indexing");
+                                            });
+                                        }
+                                    }),
+                                ),
+                                TableData::Phones { data } => Table::draw(
+                                    ui,
+                                    &[
+                                        Size::exact(ID_WIDTH),
+                                        Size::exact(UUID_WIDTH),
+                                        Size::initial(120.0),
+                                        Size::initial(120.0),
+                                        Size::initial(120.0),
+                                        Size::initial(120.0),
+                                        Size::initial(120.0),
+                                        Size::initial(120.0),
+                                        Size::exact(TIMESTAMP_WIDTH),
+                                        Size::exact(TIMESTAMP_WIDTH),
+                                        Size::exact(BUTTON_WIDTH),
+                                    ],
+                                    &[
+                                        "ID",
+                                        "UUID",
+                                        "Owner",
+                                        "IMEI",
+                                        "WiFi",
+                                        "Bluetooth",
+                                        "Model",
+                                        "Color",
+                                        "Updated",
+                                        "Created",
+                                    ],
+                                    (data.len(), |index, mut row| match data.get(index) {
+                                        Some(phone) => {
+                                            row.col(|ui| {
+                                                ui.label(index.to_string());
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(format!("{}", phone.uuid));
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(phone.owner.clone());
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(phone.imei.clone());
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(format!("{}", phone.wifi.clone()));
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(format!("{}", phone.bluetooth.clone()));
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(phone.model.clone());
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(phone.color.as_str());
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(format!("{}", phone.meta.updated));
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(format!("{}", phone.meta.created));
+                                            });
+                                            row.col(|ui| {
+                                                if *access >= TableAccess::Delete {
+                                                    if ui.button("🗑").clicked() {
+                                                        self.delete_prompt = DeletePrompt::Confirm(
+                                                            (phone.uuid, *window),
+                                                        );
+                                                    }
+                                                }
+                                            });
+                                        }
+                                        None => {
+                                            row.col(|ui| {
+                                                ui.label("Error while indexing");
+                                            });
+                                        }
+                                    }),
+                                ),
+                                TableData::Components { data } => Table::draw(
+                                    ui,
+                                    &[
+                                        Size::exact(ID_WIDTH),
+                                        Size::exact(UUID_WIDTH),
+                                        Size::initial(120.0),
+                                        Size::initial(120.0),
+                                        Size::initial(120.0),
+                                        Size::initial(120.0),
+                                        Size::exact(BUTTON_WIDTH),
+                                    ],
+                                    &[
+                                        "ID",
+                                        "UUID",
+                                        "Owner",
+                                        "IMEI",
+                                        "WiFi",
+                                        "Bluetooth",
+                                        "Model",
+                                        "Color",
+                                        "Updated",
+                                        "Created",
+                                    ],
+                                    (data.len(), |index, mut row| match data.get(index) {
+                                        Some(component) => {
+                                            row.col(|ui| {
+                                                ui.label(index.to_string());
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(format!("{}", component.uuid));
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(component.name.clone());
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(component.kind.clone());
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(component.model.clone());
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(component.manufacturer.clone());
+                                            });
+                                            row.col(|ui| {
+                                                if *access >= TableAccess::Delete {
+                                                    if ui.button("🗑").clicked() {
+                                                        self.delete_prompt = DeletePrompt::Confirm(
+                                                            (component.uuid, *window),
+                                                        );
+                                                    }
                                                 }
                                             });
                                         }

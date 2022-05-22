@@ -48,6 +48,30 @@ impl Color {
         Self::LightBlue,
         Self::Gold,
     ];
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Black => "Black",
+            Self::DarkGray => "Dark Grey",
+            Self::Gray => "Gray",
+            Self::LightGray => "Light Gray",
+            Self::White => "White",
+            Self::Brown => "Brown",
+            Self::DarkRed => "Dark Red",
+            Self::Red => "Red",
+            Self::LightRed => "Light Red",
+            Self::Yellow => "Yellow",
+            Self::LightYellow => "Light Yellow",
+            Self::Khaki => "Khaki",
+            Self::DarkGreen => "Dark Green",
+            Self::Green => "Green",
+            Self::LightGreen => "Light Green",
+            Self::DarkBlue => "Dark Blue",
+            Self::Blue => "Blue",
+            Self::LightBlue => "Light Blue",
+            Self::Gold => "Gold",
+        }
+    }
 }
 
 impl Recreatable for Color {

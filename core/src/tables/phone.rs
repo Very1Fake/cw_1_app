@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::{
     traits::Insertable,
     types::{color::Color, metatime::MetaTime},
+    PgQuery,
 };
 
 #[derive(FromRow, Serialize, Deserialize, Clone, Debug)]
@@ -78,6 +79,10 @@ impl Phone {
             color,
             MetaTime::default(),
         )
+    }
+
+    pub fn delete_by_uuid(uuid: Uuid) -> PgQuery {
+        query(r#"DELETE FROM "Service" WHERE uuid = $1"#).bind(uuid)
     }
 }
 impl Insertable for Phone {
