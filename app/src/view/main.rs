@@ -563,14 +563,10 @@ impl MainView {
                                     &[
                                         "ID",
                                         "UUID",
-                                        "Owner",
-                                        "IMEI",
-                                        "WiFi",
-                                        "Bluetooth",
-                                        "Model",
-                                        "Color",
-                                        "Updated",
-                                        "Created",
+                                        "Name",
+                                        "Kind",
+                                        "Phone Model",
+                                        "Manufacturer",
                                     ],
                                     (data.len(), |index, mut row| match data.get(index) {
                                         Some(component) => {

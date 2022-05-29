@@ -16,7 +16,7 @@ impl Manufacturer {
 
     pub const CREATE: &'static str = r#"CREATE TABLE "Manufacturer" (
     uuid uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name text,
+    name text NOT NULL,
     country char(2) NOT NULL
 );"#;
 

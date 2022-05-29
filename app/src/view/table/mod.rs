@@ -105,7 +105,6 @@ impl TableWindow {
             Self::People => &[
                 (TableAccess::Full, AccountRole::Admin),
                 (TableAccess::Edit, AccountRole::Accountant),
-                (TableAccess::View, AccountRole::HR),
                 (TableAccess::Create, AccountRole::Shopman),
             ],
             Self::Positions => &[
@@ -115,35 +114,29 @@ impl TableWindow {
             ],
             Self::Manufacturers => &[
                 (TableAccess::Full, AccountRole::Admin),
-                (TableAccess::View, AccountRole::Accountant),
                 (TableAccess::Edit, AccountRole::Manager),
-                (TableAccess::Create, AccountRole::Serviceman),
-                (TableAccess::Create, AccountRole::WarehouseWorker),
+                (TableAccess::View, AccountRole::WarehouseWorker),
             ],
             Self::Services => &[
                 (TableAccess::Full, AccountRole::Admin),
-                (TableAccess::View, AccountRole::Accountant),
-                (TableAccess::Edit, AccountRole::Manager),
-                (TableAccess::Edit, AccountRole::Serviceman),
-                (TableAccess::View, AccountRole::WarehouseWorker),
+                (TableAccess::Full, AccountRole::Manager),
+                (TableAccess::View, AccountRole::Serviceman),
             ],
             Self::Suppliers => &[
                 (TableAccess::Full, AccountRole::Admin),
-                (TableAccess::Edit, AccountRole::Accountant),
                 (TableAccess::Edit, AccountRole::Manager),
+                (TableAccess::View, AccountRole::Accountant),
             ],
             Self::Phones => &[
                 (TableAccess::Full, AccountRole::Admin),
-                (TableAccess::Edit, AccountRole::Manager),
                 (TableAccess::Edit, AccountRole::Serviceman),
                 (TableAccess::Create, AccountRole::Shopman),
-                (TableAccess::View, AccountRole::WarehouseWorker),
             ],
             Self::Components => &[
                 (TableAccess::Full, AccountRole::Admin),
-                (TableAccess::Edit, AccountRole::Manager),
-                (TableAccess::Edit, AccountRole::Serviceman),
-                (TableAccess::Edit, AccountRole::WarehouseWorker),
+                (TableAccess::Full, AccountRole::Manager),
+                (TableAccess::View, AccountRole::Serviceman),
+                (TableAccess::View, AccountRole::WarehouseWorker),
             ],
         }
     }
